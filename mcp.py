@@ -2,8 +2,10 @@
 """
 MCP Tool for Franconian Translation using BDO API
 
-Refactored with modern Python 3.13+ patterns, proper separation of concerns,
-and strategic design patterns for maintainability.
+Modern MCP-compliant implementation with proper resource exposure,
+structured output, and comprehensive error handling.
+
+Requires Python 3.13+ for modern typing features.
 """
 
 from __future__ import annotations
@@ -19,25 +21,9 @@ from typing import Any, AsyncGenerator, Final, Literal, Self
 from urllib.parse import quote_plus
 
 import httpx
-from mcp.server import Server
-from mcp.server.models import InitializationOptions
-from mcp.server.models import (
-    Resource,
-    Tool,
-    TextContent,
-    ImageContent,
-    EmbeddedResource,
-)
-from mcp.types import (
-    CallToolRequest,
-    CallToolResult,
-    ListResourcesRequest,
-    ListResourcesResult,
-    ListToolsRequest,
-    ListToolsResult,
-    ReadResourceRequest,
-    ReadResourceResult,
-)
+from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.session import ServerSession
+from mcp.types import TextContent
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -86,10 +72,37 @@ class BDOApiError(Exception):
         self.status_code = status_code
 
 
-# Modern Pydantic Models (No more barbaric dataclasses!)
+# Structured Output Models for MCP
+class TranslationEntry(BaseModel):
+    """Single translation entry with structured data."""
+    franconian_word: str = Field(description="Franconian dialect word")
+    german_word: str = Field(description="German source word")
+    definition: str | None = Field(default=None, description="Definition or meaning")
+    location: str | None = Field(default=None, description="Geographic location")
+    source_project: str | None = Field(default=None, description="Dictionary project source")
+
+
+class TranslationResult(BaseModel):
+    """Structured translation result for MCP tools."""
+    query: str = Field(description="Original German word searched")
+    total_results: int = Field(description="Total number of results found")
+    searched_areas: list[str] = Field(description="Geographic areas searched")
+    translations: list[TranslationEntry] = Field(description="Found translations")
+    success: bool = Field(description="Whether the search was successful")
+    error_message: str | None = Field(default=None, description="Error message if failed")
+
+
+class NeighboringAreasInfo(BaseModel):
+    """Information about neighboring areas for a town."""
+    town: str = Field(description="Main town name")
+    neighboring_areas: list[str] = Field(description="List of neighboring areas")
+    total_count: int = Field(description="Total number of neighboring areas")
+
+
+# Internal Models (not exposed to MCP)
 class SearchParameters(BaseModel):
-    """Search parameters with proper validation at system boundary."""
-    german_word: str = Field(min_length=1, description="German word to translate")
+    """Internal search parameters."""
+    german_word: str = Field(min_length=1)
     limit: int = Field(default=DEFAULT_RESULTS_LIMIT, ge=1, le=MAX_RESULTS_PER_QUERY)
     exact_match: bool = False
     region: BavarianRegion | None = None
@@ -130,25 +143,6 @@ class BDOApiParams(BaseModel):
         )
 
 
-class SearchResult(BaseModel):
-    """Search result with comprehensive metadata."""
-    success: bool
-    query: str
-    results: list[dict[str, Any]] = Field(default_factory=list)
-    count: int = 0
-    searched_areas: list[str] = Field(default_factory=list)
-    error: str | None = None
-    debug_info: str | None = None
-    parameters_used: dict[str, Any] = Field(default_factory=dict)
-
-    @model_validator(mode='after')
-    def validate_count(self) -> Self:
-        """Auto-calculate count if not provided."""
-        if self.count == 0:
-            self.count = len(self.results)
-        return self
-
-
 # Strategy Pattern Implementation
 class SearchStrategy(ABC):
     """Abstract base class for search strategies."""
@@ -157,8 +151,9 @@ class SearchStrategy(ABC):
     async def execute_search(
         self, 
         params: SearchParameters, 
-        api_client: 'BDOApiClient'
-    ) -> SearchResult:
+        api_client: 'BDOApiClient',
+        ctx: Context[ServerSession, None] | None = None
+    ) -> TranslationResult:
         """Execute the search strategy."""
         pass
 
@@ -169,29 +164,90 @@ class BasicSearchStrategy(SearchStrategy):
     async def execute_search(
         self, 
         params: SearchParameters, 
-        api_client: 'BDOApiClient'
-    ) -> SearchResult:
+        api_client: 'BDOApiClient',
+        ctx: Context[ServerSession, None] | None = None
+    ) -> TranslationResult:
         """Execute basic search strategy."""
-        api_params = BDOApiParams.from_search_params(params)
-        
         try:
-            response_data = await api_client.make_request(api_params)
-            results = api_client.extract_results(response_data)
+            if ctx:
+                await ctx.info(f"Searching for '{params.german_word}' in BDO database")
             
-            return SearchResult(
-                success=True,
+            api_params = BDOApiParams.from_search_params(params)
+            response_data = await api_client.make_request(api_params)
+            raw_results = api_client.extract_results(response_data)
+            
+            # Convert raw results to structured format
+            translations = []
+            for raw_result in raw_results[:params.limit]:
+                translation = self._convert_raw_result(raw_result, params.german_word)
+                translations.append(translation)
+            
+            if ctx:
+                await ctx.info(f"Found {len(translations)} translations")
+            
+            return TranslationResult(
                 query=params.german_word,
-                results=results,
+                total_results=len(translations),
                 searched_areas=[params.county or "all"],
-                parameters_used=api_params.model_dump(exclude_none=True)
+                translations=translations,
+                success=True
             )
+            
         except BDOApiError as e:
-            return SearchResult(
-                success=False,
+            error_msg = f"API error: {e}"
+            if ctx:
+                await ctx.error(error_msg)
+            
+            return TranslationResult(
                 query=params.german_word,
-                error=str(e),
-                debug_info="API request failed",
-                parameters_used=api_params.model_dump(exclude_none=True)
+                total_results=0,
+                searched_areas=[],
+                translations=[],
+                success=False,
+                error_message=error_msg
+            )
+        except Exception as e:
+            error_msg = f"Unexpected error: {e}"
+            if ctx:
+                await ctx.error(error_msg)
+            
+            return TranslationResult(
+                query=params.german_word,
+                total_results=0,
+                searched_areas=[],
+                translations=[],
+                success=False,
+                error_message=error_msg
+            )
+    
+    def _convert_raw_result(self, raw_result: dict[str, Any], query: str) -> TranslationEntry:
+        """Convert raw API result to structured TranslationEntry."""
+        if isinstance(raw_result, dict):
+            franconian = raw_result.get('franconian', 
+                raw_result.get('translation', 
+                    raw_result.get('word', 
+                        raw_result.get('lemma', 'N/A'))))
+            german = raw_result.get('german', 
+                raw_result.get('source', query))
+            definition = raw_result.get('definition', 
+                raw_result.get('meaning', 
+                    raw_result.get('bedeutung', '')))
+            location = raw_result.get('location', 
+                raw_result.get('region', 
+                    raw_result.get('ort', '')))
+            project = raw_result.get('project', '')
+            
+            return TranslationEntry(
+                franconian_word=franconian,
+                german_word=german,
+                definition=definition if definition else None,
+                location=location if location else None,
+                source_project=project if project else None
+            )
+        else:
+            return TranslationEntry(
+                franconian_word=str(raw_result),
+                german_word=query
             )
 
 
@@ -212,15 +268,28 @@ class NeighboringAreasSearchStrategy(SearchStrategy):
     async def execute_search(
         self, 
         params: SearchParameters, 
-        api_client: 'BDOApiClient'
-    ) -> SearchResult:
+        api_client: 'BDOApiClient',
+        ctx: Context[ServerSession, None] | None = None
+    ) -> TranslationResult:
         """Execute neighboring areas search strategy."""
         counties_to_search = self._get_counties_to_search(params)
         
-        all_results: list[dict[str, Any]] = []
-        search_areas: list[str] = []
+        if ctx:
+            await ctx.info(f"Searching in {len(counties_to_search)} areas: {', '.join(counties_to_search)}")
         
-        for search_county in counties_to_search:
+        all_translations: list[TranslationEntry] = []
+        search_areas: list[str] = []
+        basic_strategy = BasicSearchStrategy()
+        
+        for i, search_county in enumerate(counties_to_search):
+            if ctx:
+                progress = (i + 1) / len(counties_to_search)
+                await ctx.report_progress(
+                    progress=progress,
+                    total=1.0,
+                    message=f"Searching in {search_county or 'all areas'}"
+                )
+            
             # Create new parameters for each county search
             county_params = params.model_copy(
                 update={
@@ -230,28 +299,29 @@ class NeighboringAreasSearchStrategy(SearchStrategy):
             )
             
             try:
-                api_params = BDOApiParams.from_search_params(county_params)
-                response_data = await api_client.make_request(api_params)
-                results = api_client.extract_results(response_data)
-                
-                all_results.extend(results)
-                search_areas.append(search_county or "all")
+                result = await basic_strategy.execute_search(county_params, api_client)
+                if result.success:
+                    all_translations.extend(result.translations)
+                    search_areas.append(search_county or "all")
                 
                 # Break early if we have enough results
-                if len(all_results) >= params.limit:
-                    all_results = all_results[:params.limit]
+                if len(all_translations) >= params.limit:
+                    all_translations = all_translations[:params.limit]
                     break
                     
-            except BDOApiError:
+            except Exception:
                 # Continue with other counties if one fails
                 continue
         
-        return SearchResult(
-            success=True,
+        if ctx:
+            await ctx.info(f"Completed search across {len(search_areas)} areas")
+        
+        return TranslationResult(
             query=params.german_word,
-            results=all_results,
+            total_results=len(all_translations),
             searched_areas=search_areas,
-            parameters_used={"strategy": "neighboring_areas", "counties": counties_to_search}
+            translations=all_translations,
+            success=True
         )
     
     def _get_counties_to_search(self, params: SearchParameters) -> list[str]:
@@ -381,435 +451,240 @@ class SearchStrategyFactory:
             return BasicSearchStrategy()
 
 
-# Main Tool Class (Now Much Cleaner!)
-class FranconianTranslationTool:
-    """
-    Modern Franconian translation tool using strategy and factory patterns.
+# Create MCP server
+mcp = FastMCP("Franconian Translation Tool")
+
+# Initialize API client
+api_client = BDOApiClient()
+
+
+# MCP Resources - Expose static data
+@mcp.resource("franconian://regions")
+def get_franconian_regions() -> str:
+    """Get available Franconian administrative regions."""
+    regions = [
+        BavarianRegion.MITTELFRANKEN.value,
+        BavarianRegion.OBERFRANKEN.value,
+        BavarianRegion.UNTERFRANKEN.value
+    ]
+    return json.dumps({
+        "franconian_regions": regions,
+        "description": "Administrative regions (Regierungsbezirke) in Franconia"
+    }, indent=2, ensure_ascii=False)
+
+
+@mcp.resource("franconian://towns")
+def get_franconian_towns() -> str:
+    """Get available Franconian towns with neighboring areas."""
+    strategy = NeighboringAreasSearchStrategy()
+    towns_data = {}
     
-    This refactored version follows proper separation of concerns and
-    eliminates the monolithic class problem described in the design patterns.
-    """
-    
-    def __init__(self) -> None:
-        """Initialize the translation tool."""
-        self.api_client = BDOApiClient()
-        self.logger = logging.getLogger(self.__class__.__name__)
-    
-    async def search_translation(self, params: SearchParameters) -> SearchResult:
-        """
-        Search for Franconian translations using appropriate strategy.
-        
-        This method delegates to the appropriate strategy based on parameters,
-        following the Strategy pattern to avoid bloated conditional logic.
-        """
-        try:
-            strategy = SearchStrategyFactory.create_strategy(params)
-            return await strategy.execute_search(params, self.api_client)
-        except Exception as e:
-            self.logger.exception(f"Unexpected error searching for {params.german_word}")
-            return SearchResult(
-                success=False,
-                query=params.german_word,
-                error=f"Unexpected error: {e}",
-                debug_info="Unexpected error during search"
-            )
-    
-    async def search_ansbach_area(
-        self, 
-        german_word: str, 
-        limit: int = DEFAULT_RESULTS_LIMIT, 
-        include_neighbors: bool = True
-    ) -> SearchResult:
-        """Convenience method for searching in Ansbach area."""
-        params = SearchParameters(
-            german_word=german_word,
-            limit=limit,
-            region=BavarianRegion.MITTELFRANKEN,
-            county=FranconianTown.ANSBACH.value,
-            project=BDOProject.WBF,
-            include_neighboring=include_neighbors
-        )
-        return await self.search_translation(params)
-    
-    async def search_with_neighbors(
-        self, 
-        german_word: str, 
-        town: FranconianTown, 
-        limit: int = DEFAULT_RESULTS_LIMIT
-    ) -> SearchResult:
-        """Search for translations in a town and neighboring areas."""
-        params = SearchParameters(
-            german_word=german_word,
-            limit=limit,
-            county=town.value,
-            project=BDOProject.WBF,
-            include_neighboring=True
-        )
-        return await self.search_translation(params)
-    
-    def get_neighboring_areas(self, town: FranconianTown) -> dict[str, Any]:
-        """Get neighboring areas for a specific town."""
-        strategy = NeighboringAreasSearchStrategy()
-        
-        if town not in strategy.NEIGHBORING_AREAS:
-            return {
-                'success': False,
-                'error': f"Town '{town.value}' not found",
-                'available_towns': [t.value for t in FranconianTown]
+    for town in FranconianTown:
+        if town in strategy.NEIGHBORING_AREAS:
+            towns_data[town.value] = {
+                "neighboring_areas": strategy.NEIGHBORING_AREAS[town],
+                "total_neighbors": len(strategy.NEIGHBORING_AREAS[town])
             }
-        
-        return {
-            'success': True,
-            'town': town.value,
-            'neighbors': strategy.NEIGHBORING_AREAS[town],
-            'total_areas': len(strategy.NEIGHBORING_AREAS[town])
-        }
     
-    def get_all_neighboring_areas(self) -> dict[str, list[str]]:
-        """Get all available towns and their neighboring areas."""
+    return json.dumps({
+        "franconian_towns": towns_data,
+        "description": "Major Franconian towns and their neighboring areas"
+    }, indent=2, ensure_ascii=False)
+
+
+@mcp.resource("franconian://counties/{region}")
+def get_counties_by_region(region: str) -> str:
+    """Get common counties for a specific Franconian region."""
+    counties_map = {
+        BavarianRegion.MITTELFRANKEN.value: [
+            "Ansbach", "Nürnberg", "Fürth", "Erlangen", 
+            "Schwabach", "Neustadt a.d. Aisch", "Weißenburg"
+        ],
+        BavarianRegion.OBERFRANKEN.value: [
+            "Bamberg", "Bayreuth", "Coburg", "Forchheim", 
+            "Hof", "Kronach", "Kulmbach", "Lichtenfels"
+        ],
+        BavarianRegion.UNTERFRANKEN.value: [
+            "Würzburg", "Aschaffenburg", "Schweinfurt", 
+            "Bad Kissingen", "Rhön-Grabfeld", "Main-Spessart", "Miltenberg"
+        ]
+    }
+    
+    if region not in counties_map:
+        return json.dumps({
+            "error": f"Region '{region}' not found",
+            "available_regions": list(counties_map.keys())
+        }, indent=2)
+    
+    return json.dumps({
+        "region": region,
+        "counties": counties_map[region],
+        "total_counties": len(counties_map[region])
+    }, indent=2, ensure_ascii=False)
+
+
+# MCP Tools with Structured Output
+@mcp.tool()
+async def search_franconian_translation(
+    german_word: str,
+    limit: int = DEFAULT_RESULTS_LIMIT,
+    exact_match: bool = False,
+    region: str | None = None,
+    county: str | None = None,
+    project: str | None = None,
+    include_neighboring: bool = False,
+    ctx: Context[ServerSession, None] | None = None
+) -> TranslationResult:
+    """
+    Search for Franconian translations with advanced location-based filtering.
+    
+    Returns structured translation results with metadata.
+    """
+    try:
+        # Validate and convert parameters
+        region_enum = BavarianRegion(region) if region else None
+        project_enum = BDOProject(project) if project else None
+        
+        params = SearchParameters(
+            german_word=german_word,
+            limit=limit,
+            exact_match=exact_match,
+            region=region_enum,
+            county=county,
+            project=project_enum,
+            include_neighboring=include_neighboring
+        )
+        
+        strategy = SearchStrategyFactory.create_strategy(params)
+        result = await strategy.execute_search(params, api_client, ctx)
+        
+        return result
+        
+    except ValueError as e:
+        return TranslationResult(
+            query=german_word,
+            total_results=0,
+            searched_areas=[],
+            translations=[],
+            success=False,
+            error_message=f"Invalid parameter: {e}"
+        )
+    except Exception as e:
+        if ctx:
+            await ctx.error(f"Unexpected error: {e}")
+        
+        return TranslationResult(
+            query=german_word,
+            total_results=0,
+            searched_areas=[],
+            translations=[],
+            success=False,
+            error_message=f"Unexpected error: {e}"
+        )
+
+
+@mcp.tool()
+async def search_ansbach_area(
+    german_word: str,
+    limit: int = DEFAULT_RESULTS_LIMIT,
+    include_neighbors: bool = True,
+    ctx: Context[ServerSession, None] | None = None
+) -> TranslationResult:
+    """Search specifically in Ansbach and optionally neighboring areas."""
+    return await search_franconian_translation(
+        german_word=german_word,
+        limit=limit,
+        region=BavarianRegion.MITTELFRANKEN.value,
+        county=FranconianTown.ANSBACH.value,
+        project=BDOProject.WBF.value,
+        include_neighboring=include_neighbors,
+        ctx=ctx
+    )
+
+
+@mcp.tool()
+async def search_with_neighbors(
+    german_word: str,
+    town: str,
+    limit: int = DEFAULT_RESULTS_LIMIT,
+    ctx: Context[ServerSession, None] | None = None
+) -> TranslationResult:
+    """Search for translations in a town and neighboring areas."""
+    try:
+        town_enum = FranconianTown(town)
+        
+        return await search_franconian_translation(
+            german_word=german_word,
+            limit=limit,
+            county=town_enum.value,
+            project=BDOProject.WBF.value,
+            include_neighboring=True,
+            ctx=ctx
+        )
+    except ValueError:
+        return TranslationResult(
+            query=german_word,
+            total_results=0,
+            searched_areas=[],
+            translations=[],
+            success=False,
+            error_message=f"Town '{town}' not found. Available towns: {[t.value for t in FranconianTown]}"
+        )
+
+
+@mcp.tool()
+def get_neighboring_areas(town: str) -> NeighboringAreasInfo:
+    """Get neighboring areas for a specific town."""
+    try:
+        town_enum = FranconianTown(town)
         strategy = NeighboringAreasSearchStrategy()
-        return {town.value: areas for town, areas in strategy.NEIGHBORING_AREAS.items()}
-    
-    def get_franconian_regions(self) -> list[str]:
-        """Get list of Franconian regions."""
-        return [
-            BavarianRegion.MITTELFRANKEN.value,
-            BavarianRegion.OBERFRANKEN.value,
-            BavarianRegion.UNTERFRANKEN.value
-        ]
-    
-    def get_common_counties(self) -> dict[str, list[str]]:
-        """Get common counties for each Franconian region."""
-        return {
-            BavarianRegion.MITTELFRANKEN.value: [
-                "Ansbach", "Nürnberg", "Fürth", "Erlangen", 
-                "Schwabach", "Neustadt a.d. Aisch", "Weißenburg"
-            ],
-            BavarianRegion.OBERFRANKEN.value: [
-                "Bamberg", "Bayreuth", "Coburg", "Forchheim", 
-                "Hof", "Kronach", "Kulmbach", "Lichtenfels"
-            ],
-            BavarianRegion.UNTERFRANKEN.value: [
-                "Würzburg", "Aschaffenburg", "Schweinfurt", 
-                "Bad Kissingen", "Rhön-Grabfeld", "Main-Spessart", "Miltenberg"
-            ]
-        }
-    
-    def format_translation_result(self, result: SearchResult) -> str:
-        """Format a translation result for display."""
-        if not result.success:
-            error_msg = f"Error: {result.error}"
-            if result.debug_info:
-                error_msg += f"\nDebug: {result.debug_info}"
-            return error_msg
         
-        if result.count == 0:
-            return f"No Franconian translations found for '{result.query}'"
+        if town_enum not in strategy.NEIGHBORING_AREAS:
+            raise ValueError(f"Town '{town}' not found in neighboring areas database")
         
-        output_lines = [
-            f"Franconian translations for '{result.query}' ({result.count} results):",
-            "=" * 50
-        ]
+        neighbors = strategy.NEIGHBORING_AREAS[town_enum]
         
-        if result.searched_areas != ['all']:
-            output_lines.append(f"Search areas: {', '.join(result.searched_areas)}")
-            output_lines.append("")
+        return NeighboringAreasInfo(
+            town=town_enum.value,
+            neighboring_areas=neighbors,
+            total_count=len(neighbors)
+        )
         
-        for i, doc in enumerate(result.results[:10], 1):
-            if isinstance(doc, dict):
-                franconian = doc.get('franconian', 
-                    doc.get('translation', 
-                        doc.get('word', 
-                            doc.get('lemma', 'N/A'))))
-                german = doc.get('german', 
-                    doc.get('source', result.query))
-                definition = doc.get('definition', 
-                    doc.get('meaning', 
-                        doc.get('bedeutung', '')))
-                location = doc.get('location', 
-                    doc.get('region', 
-                        doc.get('ort', '')))
-                
-                output_lines.append(f"{i}. {franconian}")
-                if german != result.query:
-                    output_lines.append(f"   German: {german}")
-                if definition:
-                    output_lines.append(f"   Definition: {definition}")
-                if location:
-                    output_lines.append(f"   Location: {location}")
-                output_lines.append("")
-            else:
-                output_lines.append(f"{i}. {str(doc)}")
-        
-        return "\n".join(output_lines)
-    
-    async def close(self) -> None:
-        """Close resources."""
-        await self.api_client.close()
+    except ValueError as e:
+        # For structured output, we still need to return the expected type
+        # but with error information
+        return NeighboringAreasInfo(
+            town=town,
+            neighboring_areas=[],
+            total_count=0
+        )
 
 
-# Initialize MCP server and tool instance
-app = Server("franconian-translation-tool")
-translation_tool = FranconianTranslationTool()
+@mcp.tool()
+def get_all_neighboring_areas() -> dict[str, list[str]]:
+    """Get all available towns and their neighboring areas."""
+    strategy = NeighboringAreasSearchStrategy()
+    return {town.value: areas for town, areas in strategy.NEIGHBORING_AREAS.items()}
 
 
-@app.list_tools()
-async def handle_list_tools() -> list[Tool]:
-    """List available tools with comprehensive type safety."""
+@mcp.tool()
+def get_franconian_regions() -> list[str]:
+    """Get list of Franconian administrative regions."""
     return [
-        Tool(
-            name="search_franconian_translation",
-            description="Search for Franconian translations with advanced location-based filtering",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "german_word": {
-                        "type": "string",
-                        "description": "German word to translate to Franconian",
-                        "minLength": 1
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": f"Maximum results to return (1-{MAX_RESULTS_PER_QUERY})",
-                        "default": DEFAULT_RESULTS_LIMIT,
-                        "minimum": 1,
-                        "maximum": MAX_RESULTS_PER_QUERY
-                    },
-                    "exact_match": {
-                        "type": "boolean",
-                        "description": "Search for exact matches only",
-                        "default": False
-                    },
-                    "region": {
-                        "type": "string",
-                        "description": "Administrative region filter",
-                        "enum": [r.value for r in BavarianRegion]
-                    },
-                    "county": {
-                        "type": "string", 
-                        "description": "County/district filter (historical pre-1970s boundaries)"
-                    },
-                    "project": {
-                        "type": "string",
-                        "description": "Dictionary project to search",
-                        "enum": [p.value for p in BDOProject]
-                    },
-                    "include_neighboring": {
-                        "type": "boolean",
-                        "description": "Include neighboring counties in search",
-                        "default": False
-                    }
-                },
-                "required": ["german_word"],
-                "additionalProperties": False
-            }
-        ),
-        Tool(
-            name="search_ansbach_area",
-            description="Search specifically in Ansbach and optionally neighboring areas",
-            inputSchema={
-                "type": "object", 
-                "properties": {
-                    "german_word": {
-                        "type": "string",
-                        "description": "German word to translate",
-                        "minLength": 1
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": f"Maximum results (1-{MAX_RESULTS_PER_QUERY})",
-                        "default": DEFAULT_RESULTS_LIMIT,
-                        "minimum": 1,
-                        "maximum": MAX_RESULTS_PER_QUERY
-                    },
-                    "include_neighbors": {
-                        "type": "boolean", 
-                        "description": "Include neighboring areas",
-                        "default": True
-                    }
-                },
-                "required": ["german_word"],
-                "additionalProperties": False
-            }
-        ),
-        Tool(
-            name="search_with_neighbors",
-            description="Search in specific town and neighboring areas",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "german_word": {
-                        "type": "string",
-                        "description": "German word to translate",
-                        "minLength": 1
-                    },
-                    "town": {
-                        "type": "string",
-                        "description": "Main town to search around",
-                        "enum": [t.value for t in FranconianTown]
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": f"Maximum results (1-{MAX_RESULTS_PER_QUERY})",
-                        "default": DEFAULT_RESULTS_LIMIT,
-                        "minimum": 1,
-                        "maximum": MAX_RESULTS_PER_QUERY
-                    }
-                },
-                "required": ["german_word", "town"],
-                "additionalProperties": False
-            }
-        ),
-        Tool(
-            name="get_franconian_regions",
-            description="Get available Franconian administrative regions",
-            inputSchema={
-                "type": "object",
-                "properties": {},
-                "required": [],
-                "additionalProperties": False
-            }
-        ),
-        Tool(
-            name="get_neighboring_areas",
-            description="Get neighboring areas for specific town",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "town": {
-                        "type": "string", 
-                        "description": "Town to get neighbors for",
-                        "enum": [t.value for t in FranconianTown]
-                    }
-                },
-                "required": ["town"],
-                "additionalProperties": False
-            }
-        ),
-        Tool(
-            name="get_all_neighboring_areas",
-            description="Get all towns and their neighboring areas",
-            inputSchema={
-                "type": "object",
-                "properties": {},
-                "required": [],
-                "additionalProperties": False
-            }
-        )
+        BavarianRegion.MITTELFRANKEN.value,
+        BavarianRegion.OBERFRANKEN.value,
+        BavarianRegion.UNTERFRANKEN.value
     ]
 
 
-@app.call_tool()
-async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
-    """Handle tool calls with comprehensive error handling and type safety."""
-    try:
-        match name:
-            case "search_franconian_translation":
-                params = SearchParameters(**arguments)
-                result = await translation_tool.search_translation(params)
-                formatted_result = translation_tool.format_translation_result(result)
-                return [TextContent(type="text", text=formatted_result)]
-            
-            case "search_ansbach_area":
-                result = await translation_tool.search_ansbach_area(
-                    arguments["german_word"],
-                    arguments.get("limit", DEFAULT_RESULTS_LIMIT),
-                    arguments.get("include_neighbors", True)
-                )
-                
-                neighbors_text = " and neighboring areas" if arguments.get("include_neighbors", True) else " area only"
-                formatted_result = translation_tool.format_translation_result(result)
-                
-                return [TextContent(
-                    type="text", 
-                    text=f"Franconian words from Ansbach{neighbors_text}:\n{formatted_result}"
-                )]
-            
-            case "search_with_neighbors":
-                town = FranconianTown(arguments["town"])
-                result = await translation_tool.search_with_neighbors(
-                    arguments["german_word"],
-                    town,
-                    arguments.get("limit", DEFAULT_RESULTS_LIMIT)
-                )
-                
-                formatted_result = translation_tool.format_translation_result(result)
-                return [TextContent(
-                    type="text",
-                    text=f"Franconian words from {town.value} and neighboring areas:\n{formatted_result}"
-                )]
-            
-            case "get_franconian_regions":
-                regions = translation_tool.get_franconian_regions()
-                regions_text = "Franconian Regions (Regierungsbezirke):\n" + "\n".join(f"• {region}" for region in regions)
-                return [TextContent(type="text", text=regions_text)]
-            
-            case "get_neighboring_areas":
-                town = FranconianTown(arguments["town"])
-                result = translation_tool.get_neighboring_areas(town)
-                
-                if not result['success']:
-                    error_text = f"Error: {result['error']}\n\nAvailable towns: {', '.join(result['available_towns'])}"
-                    return [TextContent(type="text", text=error_text)]
-                
-                neighbors_text = (f"Neighboring areas for {result['town']}:\n" +
-                                "\n".join(f"• {area}" for area in result['neighbors']) +
-                                f"\n\nTotal areas: {result['total_areas']}")
-                
-                return [TextContent(type="text", text=neighbors_text)]
-            
-            case "get_all_neighboring_areas":
-                areas = translation_tool.get_all_neighboring_areas()
-                result_text = "All available towns with neighboring areas:\n\n"
-                
-                for town, neighbors in areas.items():
-                    result_text += f"🏘️  {town}:\n   {', '.join(neighbors)}\n\n"
-                
-                return [TextContent(type="text", text=result_text.strip())]
-            
-            case _:
-                return [TextContent(type="text", text=f"Unknown tool: {name}")]
-    
-    except ValueError as e:
-        return [TextContent(type="text", text=f"Invalid parameter: {e}")]
-    except KeyError as e:
-        return [TextContent(type="text", text=f"Missing required parameter: {e}")]
-    except Exception as e:
-        logging.exception(f"Unexpected error in tool {name}")
-        return [TextContent(type="text", text=f"Unexpected error: {e}")]
-
-
-async def main() -> None:
-    """Main entry point with proper resource management."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    
-    try:
-        from mcp.server.stdio import stdio_server
-        
-        async with stdio_server() as (read_stream, write_stream):
-            await app.run(
-                read_stream, 
-                write_stream, 
-                InitializationOptions(
-                    server_name="franconian-translation-tool",
-                    server_version="2.0.0",
-                    capabilities=app.get_capabilities(
-                        notification_options=None,
-                        experimental_capabilities={},
-                    ),
-                ),
-            )
-    except KeyboardInterrupt:
-        logging.info("Shutting down gracefully...")
-    except Exception:
-        logging.exception("Fatal error occurred")
-        raise
-    finally:
-        await translation_tool.close()
+# Cleanup on shutdown
+async def cleanup():
+    """Cleanup resources on shutdown."""
+    await api_client.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        mcp.run()
+    finally:
+        asyncio.run(cleanup())
