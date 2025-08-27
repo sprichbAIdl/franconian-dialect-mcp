@@ -66,7 +66,7 @@ class ValidatedBDOResponse:
     def _validate_and_extract_translation(artikel: ET.Element, german_word: str) -> FranconianTranslation | None:
         """Validate individual article structure completely before extraction."""
         # Extract lemma (Franconian word)
-        lemma_elem = artikel.find(".//lemma/value")
+        lemma_elem = artikel.find(".//lemma")
         if lemma_elem is None or not lemma_elem.text:
             return None
         franconian_word = lemma_elem.text.strip()
@@ -77,9 +77,11 @@ class ValidatedBDOResponse:
             return None
         meaning = meaning_elem.text.strip()
         
-        # Find evidence with location in Ansbach area
+        # Find evidence with location preference for Ansbach area
         best_evidence = None
         best_location = None
+        fallback_evidence = None
+        fallback_location = None
         
         for beleg in artikel.findall(".//beleg-angabe"):
             evidence_elem = beleg.find(".//beleg-text")
@@ -90,14 +92,24 @@ class ValidatedBDOResponse:
             
             town = region_elem.get("ort", "").strip()
             county = region_elem.get("landkreis", "").strip()
+            evidence_text = evidence_elem.text.strip() if evidence_elem.text else ""
+            location_text = f"{town}, Landkreis {county}" if county else town
             
             # Prioritize Ansbach area locations
             if county == "AN" or "Ansbach" in town:
-                best_evidence = evidence_elem.text.strip() if evidence_elem.text else ""
-                best_location = f"{town}, Landkreis {county}" if county else town
+                best_evidence = evidence_text
+                best_location = location_text
                 break
+            # Keep first valid evidence as fallback
+            elif not fallback_evidence and evidence_text and location_text:
+                fallback_evidence = evidence_text
+                fallback_location = location_text
         
-        if not best_evidence or not best_location:
+        # Use Ansbach evidence if found, otherwise fallback
+        final_evidence = best_evidence or fallback_evidence
+        final_location = best_location or fallback_location
+        
+        if not final_evidence or not final_location:
             return None
         
         # Extract optional grammar info
@@ -114,14 +126,14 @@ class ValidatedBDOResponse:
         etymology = etymology_elem.text.strip() if etymology_elem is not None and etymology_elem.text else None
         
         # Calculate confidence based on meaning match
-        confidence = cls._calculate_confidence(german_word, meaning, franconian_word)
+        confidence = ValidatedBDOResponse._calculate_confidence(german_word, meaning, franconian_word)
         
         return FranconianTranslation(
             german_word=german_word,
             franconian_word=franconian_word,
             meaning=meaning,
-            evidence=best_evidence,
-            location=best_location,
+            evidence=final_evidence,
+            location=final_location,
             grammar=grammar,
             etymology=etymology,
             confidence=confidence

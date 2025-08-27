@@ -179,22 +179,24 @@ async def translate_to_franconian_prompt(
     return " ".join(prompt_parts)
 
 
-# Lifecycle management
-@mcp.server.lifespan
-@asynccontextmanager
-async def lifespan():
-    """Manage server lifecycle with proper cleanup."""
-    try:
-        logger.info("Starting Franconian Translation MCP Server")
-        yield
-    finally:
-        logger.info("Shutting down server")
-        # Cleanup HTTP client
-        if hasattr(translation_service._repository, '_http_client'):
-            await translation_service._repository._http_client.close()
-
-
 def run_server() -> None:
-    """Run the MCP server."""
+    """Run the MCP server with proper cleanup."""
     logger.info("Starting Franconian Translation MCP Server")
-    mcp.run()
+    try:
+        mcp.run()
+    finally:
+        # Cleanup HTTP client on shutdown
+        logger.info("Shutting down server")
+        import asyncio
+        async def cleanup():
+            if hasattr(translation_service._repository, '_http_client'):
+                await translation_service._repository._http_client.close()
+        
+        # Run cleanup if event loop is available
+        try:
+            loop = asyncio.get_event_loop()
+            if not loop.is_closed():
+                loop.run_until_complete(cleanup())
+        except RuntimeError:
+            # Event loop not available, skip cleanup
+            pass
