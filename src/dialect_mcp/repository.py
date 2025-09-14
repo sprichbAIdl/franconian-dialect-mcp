@@ -149,7 +149,69 @@ class ValidatedBDOResponse:
 
 
 class BDOParameterBuilder:
-    
+
+    # Mapping of Landkreis scopes to their official abbreviations
+    LANDKREIS_CODES = {
+        # Oberfranken
+        SearchScope.LANDKREIS_BAMBERG: "BA",
+        SearchScope.LANDKREIS_BAYREUTH: "BT",
+        SearchScope.LANDKREIS_COBURG: "CO",
+        SearchScope.LANDKREIS_FORCHHEIM: "FO",
+        SearchScope.LANDKREIS_HOF: "HO",
+        SearchScope.LANDKREIS_KRONACH: "KC",
+        SearchScope.LANDKREIS_KULMBACH: "KU",
+        SearchScope.LANDKREIS_LICHTENFELS: "LIF",
+        SearchScope.LANDKREIS_WUNSIEDEL: "WUN",
+
+        # Mittelfranken
+        SearchScope.LANDKREIS_ANSBACH: "AN",
+        SearchScope.LANDKREIS_ERLANGEN_HOECHSTADT: "ERH",
+        SearchScope.LANDKREIS_FUERTH: "FÜ",
+        SearchScope.LANDKREIS_NEUSTADT_AISCH_BAD_WINDSHEIM: "NEA",
+        SearchScope.LANDKREIS_NUERNBERGER_LAND: "LAU",
+        SearchScope.LANDKREIS_ROTH: "RH",
+        SearchScope.LANDKREIS_WEISSENBURG_GUNZENHAUSEN: "WUG",
+
+        # Unterfranken
+        SearchScope.LANDKREIS_ASCHAFFENBURG: "AB",
+        SearchScope.LANDKREIS_BAD_KISSINGEN: "KG",
+        SearchScope.LANDKREIS_HASSBERGE: "HAS",
+        SearchScope.LANDKREIS_KITZINGEN: "KT",
+        SearchScope.LANDKREIS_MAIN_SPESSART: "MSP",
+        SearchScope.LANDKREIS_MILTENBERG: "MIL",
+        SearchScope.LANDKREIS_RHOEN_GRABFELD: "NES",
+        SearchScope.LANDKREIS_SCHWEINFURT: "SW",
+        SearchScope.LANDKREIS_WUERZBURG: "WÜ",
+    }
+
+    # Mapping of city scopes to their official names
+    CITY_NAMES = {
+        # Oberfranken
+        SearchScope.CITY_BAMBERG: "Bamberg",
+        SearchScope.CITY_BAYREUTH: "Bayreuth",
+        SearchScope.CITY_COBURG: "Coburg",
+        SearchScope.CITY_HOF: "Hof",
+
+        # Mittelfranken
+        SearchScope.CITY_ANSBACH: "Ansbach",
+        SearchScope.CITY_ERLANGEN: "Erlangen",
+        SearchScope.CITY_FUERTH: "Fürth",
+        SearchScope.CITY_NUERNBERG: "Nürnberg",
+        SearchScope.CITY_SCHWABACH: "Schwabach",
+
+        # Unterfranken
+        SearchScope.CITY_ASCHAFFENBURG: "Aschaffenburg",
+        SearchScope.CITY_SCHWEINFURT: "Schweinfurt",
+        SearchScope.CITY_WUERZBURG: "Würzburg",
+    }
+
+    # Regional scope mappings - all districts in each region
+    REGIONAL_LANDKREISE = {
+        SearchScope.OBERFRANKEN: ["BA", "BT", "CO", "FO", "HO", "KC", "KU", "LIF", "WUN"],
+        SearchScope.MITTELFRANKEN: ["AN", "ERH", "FÜ", "NEA", "LAU", "RH", "WUG"],
+        SearchScope.UNTERFRANKEN: ["AB", "KG", "HAS", "KT", "MSP", "MIL", "NES", "SW", "WÜ"],
+    }
+
     @staticmethod
     def build_params(request: ValidatedTranslationRequest) -> dict[str, str]:
         params = {
@@ -158,17 +220,23 @@ class BDOParameterBuilder:
             "case": "no",
             "exact": "yes" if request.exact_match else "no"
         }
-        
-        # Set geographic scope
-        if request.scope == SearchScope.LANDKREIS_ANSBACH:
-            params["landkreise"] = "AN"
-        elif request.scope == SearchScope.CITY_ANSBACH:
-            params["orte"] = "Ansbach"
-        
-        # Add specific town if provided
-        if request.town and request.scope != SearchScope.CITY_ANSBACH:
+
+        # Set geographic scope based on scope type
+        if request.scope in BDOParameterBuilder.LANDKREIS_CODES:
+            # Single Landkreis scope
+            params["landkreise"] = BDOParameterBuilder.LANDKREIS_CODES[request.scope]
+        elif request.scope in BDOParameterBuilder.CITY_NAMES:
+            # City scope
+            params["orte"] = BDOParameterBuilder.CITY_NAMES[request.scope]
+        elif request.scope in BDOParameterBuilder.REGIONAL_LANDKREISE:
+            # Regional scope - search across multiple districts
+            landkreise_list = BDOParameterBuilder.REGIONAL_LANDKREISE[request.scope]
+            params["landkreise"] = ",".join(landkreise_list)
+
+        # Add specific town if provided (overrides city scopes)
+        if request.town:
             params["orte"] = request.town
-        
+
         return params
 
 

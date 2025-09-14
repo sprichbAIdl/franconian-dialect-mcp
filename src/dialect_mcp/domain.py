@@ -19,8 +19,59 @@ XMLContent = NewType('XMLContent', str)
 
 
 class SearchScope(StrEnum):
-    LANDKREIS_ANSBACH = "landkreis_ansbach"
+    # Regional scopes for the three main Franconian regions
+    OBERFRANKEN = "oberfranken"
+    MITTELFRANKEN = "mittelfranken"
+    UNTERFRANKEN = "unterfranken"
+
+    # Oberfranken - Kreisfreie Städte (Independent Cities)
+    CITY_BAMBERG = "city_bamberg"
+    CITY_BAYREUTH = "city_bayreuth"
+    CITY_COBURG = "city_coburg"
+    CITY_HOF = "city_hof"
+
+    # Mittelfranken - Kreisfreie Städte (Independent Cities)
     CITY_ANSBACH = "city_ansbach"
+    CITY_ERLANGEN = "city_erlangen"
+    CITY_FUERTH = "city_fuerth"
+    CITY_NUERNBERG = "city_nuernberg"
+    CITY_SCHWABACH = "city_schwabach"
+
+    # Unterfranken - Kreisfreie Städte (Independent Cities)
+    CITY_ASCHAFFENBURG = "city_aschaffenburg"
+    CITY_SCHWEINFURT = "city_schweinfurt"
+    CITY_WUERZBURG = "city_wuerzburg"
+
+    # Oberfranken - Landkreise (Districts)
+    LANDKREIS_BAMBERG = "landkreis_bamberg"
+    LANDKREIS_BAYREUTH = "landkreis_bayreuth"
+    LANDKREIS_COBURG = "landkreis_coburg"
+    LANDKREIS_FORCHHEIM = "landkreis_forchheim"
+    LANDKREIS_HOF = "landkreis_hof"
+    LANDKREIS_KRONACH = "landkreis_kronach"
+    LANDKREIS_KULMBACH = "landkreis_kulmbach"
+    LANDKREIS_LICHTENFELS = "landkreis_lichtenfels"
+    LANDKREIS_WUNSIEDEL = "landkreis_wunsiedel"
+
+    # Mittelfranken - Landkreise (Districts)
+    LANDKREIS_ANSBACH = "landkreis_ansbach"
+    LANDKREIS_ERLANGEN_HOECHSTADT = "landkreis_erlangen_hoechstadt"
+    LANDKREIS_FUERTH = "landkreis_fuerth"
+    LANDKREIS_NEUSTADT_AISCH_BAD_WINDSHEIM = "landkreis_neustadt_aisch_bad_windsheim"
+    LANDKREIS_NUERNBERGER_LAND = "landkreis_nuernberger_land"
+    LANDKREIS_ROTH = "landkreis_roth"
+    LANDKREIS_WEISSENBURG_GUNZENHAUSEN = "landkreis_weissenburg_gunzenhausen"
+
+    # Unterfranken - Landkreise (Districts)
+    LANDKREIS_ASCHAFFENBURG = "landkreis_aschaffenburg"
+    LANDKREIS_BAD_KISSINGEN = "landkreis_bad_kissingen"
+    LANDKREIS_HASSBERGE = "landkreis_hassberge"
+    LANDKREIS_KITZINGEN = "landkreis_kitzingen"
+    LANDKREIS_MAIN_SPESSART = "landkreis_main_spessart"
+    LANDKREIS_MILTENBERG = "landkreis_miltenberg"
+    LANDKREIS_RHOEN_GRABFELD = "landkreis_rhoen_grabfeld"
+    LANDKREIS_SCHWEINFURT = "landkreis_schweinfurt"
+    LANDKREIS_WUERZBURG = "landkreis_wuerzburg"
 
 
 class BDOError(Exception):
