@@ -12,10 +12,10 @@ from pydantic import BaseModel, ConfigDict
 
 
 # Domain types
-GermanWord = NewType('GermanWord', str)
-FranconianWord = NewType('FranconianWord', str)
-TownName = NewType('TownName', str)
-XMLContent = NewType('XMLContent', str)
+GermanWord = NewType("GermanWord", str)
+FranconianWord = NewType("FranconianWord", str)
+TownName = NewType("TownName", str)
+XMLContent = NewType("XMLContent", str)
 
 
 class SearchScope(StrEnum):
@@ -73,10 +73,34 @@ class SearchScope(StrEnum):
     LANDKREIS_SCHWEINFURT = "landkreis_schweinfurt"
     LANDKREIS_WUERZBURG = "landkreis_wuerzburg"
 
+    # Area scopes - combine independent cities with their surrounding districts
+    # Oberfranken Areas
+    AREA_BAMBERG = "area_bamberg"  # Stadt + Landkreis Bamberg
+    AREA_BAYREUTH = "area_bayreuth"  # Stadt + Landkreis Bayreuth
+    AREA_COBURG = "area_coburg"  # Stadt + Landkreis Coburg
+    AREA_HOF = "area_hof"  # Stadt + Landkreis Hof
+
+    # Mittelfranken Areas
+    AREA_ANSBACH = "area_ansbach"  # Stadt + Landkreis Ansbach
+    AREA_ERLANGEN = "area_erlangen"  # Stadt + Landkreis Erlangen-Höchstadt
+    AREA_FUERTH = "area_fuerth"  # Stadt + Landkreis Fürth
+    AREA_NUERNBERG = "area_nuernberg"  # Stadt + Landkreis Nürnberger Land
+
+    # Unterfranken Areas
+    AREA_ASCHAFFENBURG = "area_aschaffenburg"  # Stadt + Landkreis Aschaffenburg
+    AREA_SCHWEINFURT = "area_schweinfurt"  # Stadt + Landkreis Schweinfurt
+    AREA_WUERZBURG = "area_wuerzburg"  # Stadt + Landkreis Würzburg
+
+    # Note: Schwabach (Mittelfranken) has no corresponding district
+    # Note: Some districts don't have corresponding independent cities
+
+    # Special scope for custom town/village searches
+    CUSTOM_TOWN = "custom_town"  # Requires town parameter - for specific villages/towns
+
 
 class BDOError(Exception):
     """Base exception for BDO operations."""
-    
+
     def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
         super().__init__(message)
         self.details = details or {}
@@ -93,8 +117,9 @@ class APIError(BDOError):
 # MCP Response Models - structured output with schema validation
 class FranconianTranslation(BaseModel):
     """Structured MCP response for Franconian translations."""
+
     model_config = ConfigDict(frozen=True)
-    
+
     german_word: str
     franconian_word: str
     meaning: str
@@ -108,8 +133,9 @@ class FranconianTranslation(BaseModel):
 
 class BDOMetadata(BaseModel):
     """BDO API response metadata - validated structure."""
+
     model_config = ConfigDict(frozen=True)
-    
+
     result_count: int
     timestamp: str
     api_version: str = "1.0"

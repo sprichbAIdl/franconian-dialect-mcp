@@ -11,15 +11,15 @@ import httpx
 
 from .domain import APIError
 
-class MinimalistHTTPClient:
 
+class MinimalistHTTPClient:
     def __init__(self, timeout: float = 30.0, rate_limit_seconds: float = 1.0) -> None:
         self._client: httpx.AsyncClient | None = None
         self._timeout = timeout
         self._rate_limit_seconds = rate_limit_seconds
         self._last_request_time: float = 0.0
         self._rate_limit_lock = asyncio.Lock()
-    
+
     async def get_raw_response(self, url: str, params: dict[str, str]) -> str:
         await self._enforce_rate_limit()
 
