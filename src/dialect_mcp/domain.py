@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Domain models, types, and exceptions for Franconian dialect MCP server.
-Following LangSec principles with precise type definitions.
 """
 
 from __future__ import annotations
@@ -12,7 +11,7 @@ from typing import Any, NewType
 from pydantic import BaseModel, ConfigDict
 
 
-# Domain types - precise representations following LangSec principles
+# Domain types
 GermanWord = NewType('GermanWord', str)
 FranconianWord = NewType('FranconianWord', str)
 TownName = NewType('TownName', str)
@@ -20,7 +19,6 @@ XMLContent = NewType('XMLContent', str)
 
 
 class SearchScope(StrEnum):
-    """Minimalist search scope - constrained to essential options."""
     LANDKREIS_ANSBACH = "landkreis_ansbach"
     CITY_ANSBACH = "city_ansbach"
 

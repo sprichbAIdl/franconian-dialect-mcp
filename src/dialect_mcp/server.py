@@ -22,15 +22,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# Dependency injection
 def create_translation_service() -> FranconianTranslationService:
-    """Create translation service with dependencies."""
     http_client = MinimalistHTTPClient()
     repository = FranconianTranslationRepository(http_client)
     return FranconianTranslationService(repository)
 
 
-# MCP server setup
 mcp = FastMCP("Franconian Translation Server")
 translation_service = create_translation_service()
 
@@ -67,7 +64,6 @@ async def find_franconian_equivalent(
         )
         
         if not translations:
-            # Return empty list with message for no results
             return []
         
         return translations
@@ -185,18 +181,14 @@ def run_server() -> None:
     try:
         mcp.run()
     finally:
-        # Cleanup HTTP client on shutdown
         logger.info("Shutting down server")
-        import asyncio
         async def cleanup():
             if hasattr(translation_service._repository, '_http_client'):
                 await translation_service._repository._http_client.close()
         
-        # Run cleanup if event loop is available
         try:
             loop = asyncio.get_event_loop()
             if not loop.is_closed():
                 loop.run_until_complete(cleanup())
         except RuntimeError:
-            # Event loop not available, skip cleanup
             pass

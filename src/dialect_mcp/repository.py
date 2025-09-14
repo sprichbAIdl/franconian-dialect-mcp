@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Data access layer for BDO API integration.
-Repository pattern with XML validation following LangSec principles.
 """
 
 from __future__ import annotations
@@ -19,9 +18,7 @@ from .validation import ValidatedTranslationRequest
 from .http_client import MinimalistHTTPClient
 
 
-# Complete XML validation before processing - no shotgun parsing
 class ValidatedBDOResponse:
-    """Completely validated BDO response structure."""
     
     def __init__(self, metadata: BDOMetadata, translations: list[FranconianTranslation]) -> None:
         self.metadata = metadata
@@ -29,7 +26,6 @@ class ValidatedBDOResponse:
     
     @classmethod
     def from_xml_content(cls, xml_content: XMLContent, german_word: str) -> ValidatedBDOResponse:
-        """Validate ENTIRE XML structure before any processing - follows LangSec principles."""
         if not xml_content.strip():
             raise ValidationError("Empty XML response")
         
@@ -64,7 +60,6 @@ class ValidatedBDOResponse:
     
     @staticmethod
     def _validate_and_extract_translation(artikel: ET.Element, german_word: str) -> FranconianTranslation | None:
-        """Validate individual article structure completely before extraction."""
         # Extract lemma (Franconian word)
         lemma_elem = artikel.find(".//lemma")
         if lemma_elem is None or not lemma_elem.text:
@@ -153,13 +148,10 @@ class ValidatedBDOResponse:
             return 0.5
 
 
-# Simple parameter builder - deterministic mapping
 class BDOParameterBuilder:
-    """Simple parameter builder for BDO API - minimalist approach."""
     
     @staticmethod
     def build_params(request: ValidatedTranslationRequest) -> dict[str, str]:
-        """Build API parameters - deterministic mapping from validated request."""
         params = {
             "dictionary": "wbf",  # Franconian dictionary only
             "bedeutung": request.german_word,  # Search in meanings for German word
@@ -180,7 +172,6 @@ class BDOParameterBuilder:
         return params
 
 
-# Repository with single responsibility
 class FranconianTranslationRepository:
     """Repository for Franconian translation data access."""
     
@@ -193,14 +184,10 @@ class FranconianTranslationRepository:
         self, 
         request: ValidatedTranslationRequest
     ) -> list[FranconianTranslation]:
-        """Find Franconian translations for German word."""
-        # Build parameters using deterministic mapping
         params = BDOParameterBuilder.build_params(request)
         
-        # Get raw XML response
         raw_xml = await self._http_client.get_raw_response(self.BASE_URL, params)
         
-        # Validate XML completely before processing
         validated_response = ValidatedBDOResponse.from_xml_content(
             XMLContent(raw_xml), 
             request.german_word
