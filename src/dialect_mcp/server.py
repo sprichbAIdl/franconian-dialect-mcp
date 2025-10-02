@@ -38,6 +38,7 @@ async def find_franconian_equivalent(
     scope: str = "landkreis_ansbach",
     town: str | None = None,
     exact_match: bool = False,
+    limit: int = 10,
 ) -> list[FranconianTranslation]:
     """
     Find Franconian dialect equivalent(s) of a German word.
@@ -49,16 +50,22 @@ async def find_franconian_equivalent(
         scope: Search scope - 'landkreis_ansbach' or 'city_ansbach'
         town: Optional specific town name in Landkreis Ansbach
         exact_match: Whether to require exact matches in meanings
+        limit: Maximum number of results to return (default: 10, max: 50)
+               Note: Conservative default to prevent token overflow in MCP responses
 
     Returns:
-        List of FranconianTranslation objects with structured data
+        List of FranconianTranslation objects with structured data (limited to top results)
+        Results are sorted by confidence, so you get the best matches first
 
     Examples:
-        - find_franconian_equivalent("Wurst") → "Worscht"
-        - find_franconian_equivalent("Haus") → "Haus" (same in Franconian)
-        - find_franconian_equivalent("klein") → "glaa"
+        - find_franconian_equivalent("Wurst") → top 10 variants
+        - find_franconian_equivalent("Haus", limit=5) → top 5 variants
+        - find_franconian_equivalent("klein", limit=20) → top 20 variants
     """
     try:
+        # Enforce reasonable limits to prevent MCP token overflow
+        limit = max(1, min(limit, 50))  # Between 1 and 50
+
         translations = await translation_service.translate_to_franconian(
             german_word, scope, town, exact_match
         )
@@ -66,7 +73,8 @@ async def find_franconian_equivalent(
         if not translations:
             return []
 
-        return translations
+        # Return only top N results (already sorted by confidence in service)
+        return translations[:limit]
 
     except ValidationError as e:
         logger.error(f"Validation error: {e}")

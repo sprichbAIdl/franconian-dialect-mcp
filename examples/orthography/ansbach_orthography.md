@@ -1,238 +1,420 @@
 # Ansbach Franconian Orthography Guidelines
 
-This document provides standardized orthography for Ansbach-area Franconian dialect, based on authentic texts and regional usage patterns.
+Standardized orthography for Ansbach-area Franconian dialect, balancing authenticity with readability.
 
 ## Core Principles
 
-- **Readability First**: Balance authenticity with accessibility
-- **Consistency**: Use predictable patterns for similar sounds
-- **Natural Flow**: Write as it sounds when spoken naturally
-- **g-Prefix Universal**: Past participles always use `g-` prefix (gmacht, gwen, ghabt)
+1. **Readability First**: Accessible to both dialect speakers and learners
+2. **Phonetic Consistency**: Predictable spelling patterns for similar sounds
+3. **Regional Authenticity**: Based on Ansbach-area usage (not broader East Franconian)
+4. **Universal g-Prefix**: Past participles ALWAYS use `g-` (gmacht, gwen, ghabt, gfundn)
 
 ## Vowels
 
-### Long Vowels & Diphthongs
-- **aa**: Long a-sound (e.g., `waar` = war, `Dooch` = Tag, `klaa` = klein)
-- **oo**: Long o-sound (e.g., `doa` = da, `groß` = groß, `Moarn` = Morgen)
-- **ee**: Long e-sound (e.g., `Schnee` = Schnee, `gscheen` = geschehen)
-- **ei**: Diphthong as in German (e.g., `mei` = mein, `drei` = drei)
-- **au**: Diphthong (e.g., `Frau` = Frau, `Baum` = Baum)
-- **oa**: Alternative long o (e.g., `Broat` = Brot when used)
+### Long Vowels
+- **aa**: Long /a:/ sound → `waar` (war), `klaa` (klein), `Saal` (Saal)
+- **oo**: Long /o:/ sound → `Moos` (Moos), `Bood` (Bote)
+- **ee**: Long /e:/ sound → `Schnee` (Schnee), `Wee` (Weh), `gscheen` (geschehen)
+- **ii**: Long /i:/ sound (rare) → Generally use single `i` unless emphasis needed
+
+### Diphthongs
+- **ei**: As in Standard German → `mei` (mein), `drei` (drei), `Geiß` (Geiß)
+- **au**: As in Standard German → `laufa` (laufen), `saufn` (saufen)
+- **oa**: Long open o /ɔ:/ → `doa` (da/dort), `Broat` (Brot), `groas` (groß)
+  - **Use `oa` when Standard German has /o:/ but dialect has more open quality**
+  - **Exception**: Some words use `oo` instead (regional variation)
 
 ### Short Vowels
-- Standard German vowels: **a, e, i, o, u**
-- Umlauts: **ä, ö, ü** (e.g., `Hügl` = Hügel, `Gärtla` = Gärtchen)
+- **a, e, i, o, u**: As in Standard German
+- **Umlauts ä, ö, ü**: Preserved → `Hügl` (Hügel), `Gärtla` (Gärtchen), `schön` → `schee`
 
-### Vowel Reduction
-- Unstressed **-e** → **-a**: `macha` (machen), `helfa` (helfen), `Henna` (Henne)
-- Unstressed **-el** → **-la/-l**: `Madla` (Mädchen), `Häusla` (Häuschen), `Vogel` → `Vogl`
-- Unstressed **-er** → **-er/-a**: `Kinder` (Kinder), `wieder` → `widder`
+### Vowel Reduction (Unstressed Syllables)
+- **-en** → **-a**: `macha` (machen), `helfa` (helfen), `locha` (lachen)
+- **-el** → **-la** or **-l**: `Madla` (Mädchen), `Vogel` → `Vogl`, `Häusla` (Häuschen)
+- **-er** → **-er** or **-a**: `Kinder` (Kinder), `widder` (wieder), `unnera` (unteren)
+- **-e** (final) → **-a** or dropped: `Henna` (Henne), `guat` vs. `guade` (gute)
+
+### Special Vowel Patterns
+- **Schwa /ə/**: Write as `-a` in unstressed positions
+- **Syllabic /n/**: After consonants, keep as `-n` → `gfundn` (gefunden), `gwen` (gewesen)
 
 ## Consonants
 
-### g-Prefix (Past Participles & Verbal Prefixes)
-**ALWAYS** use **g-** for past participles and related forms:
-- `gmacht` (gemacht), `gsachd` (gesagt), `ghabt` (gehabt)
-- `glebt` (gelebt), `gfundn` (gefunden), `gsehn` (gesehen)
-- `gwerdn` (geworden), `gwesn` (gewesen), `gwen` (gewesen, short form)
-- `gsucht` (gesucht), `gdeild` (geteilt), `gholfa` (geholfen)
+### The Sacred g-Prefix Rule
 
-### Initial Consonant Clusters
-- **gsch-**: Very common (e.g., `gschafft` = gearbeitet, `gschnattert` = geschnattert)
-- **gst-**: Common (e.g., `gstorbn` = gestorben, `gstreckt` = gestreckt)
-- **gw-**: Present in several words (e.g., `gwachsn` = gewachsen, `gwälzd` = gewälzt)
+**ALWAYS use `g-` for:**
+- Past participles: `gmacht`, `gsachd`, `ghabt`, `glebt`, `gfundn`, `gsehn`
+- ge- prefix verbs: `gwen` (gewesen), `gwerdn` (geworden), `gwachsn` (gewachsen)
+- Perfect tense constructions: `hob gmacht`, `hot gsachd`, `san gwen`
 
-### Consonant Changes
-- **-nd** → **-nd/-nt**: `Kind` (Kind), `Winder` (Winter)
-- **-cht** → **-cht**: Generally preserved (e.g., `gmacht` = gemacht, `Nacht` = Nacht)
-- **-ck** → **-gg**: Sometimes (e.g., `dreggich` = dreckig, `Dregg` = Dreck)
-- **b/p, d/t, g/k**: Often softer than Standard German
+**Initial clusters with g-:**
+- **gsch-**: `gschafft` (gearbeitet), `gschnattert` (geschnattert), `gschrien` (geschrien)
+- **gst-**: `gstorbn` (gestorben), `gstreckt` (gestreckt), `gstandn` (gestanden)
+- **gsp-**: `gspielt` (gespielt), `gspart` (gespart)
+- **gw-**: `gwachsn` (gewachsen), `gwälzd` (gewälzt), `gwen` (gewesen)
 
-### Consonant Reductions
-- **-en** → **-n**: `kumma` (kommen), `lassn` (lassen), `ham` (haben)
-- **-er** → **-er/-a**: `widder` (wieder), `anner` (anderer)
-- **haben** → **ham/hom**: Special reduction (mir ham, se hom)
+### Consonant Shifts & Changes
+- **-nd** → usually **-nd**: `Kind` (Kind), `Hand` (Hand), `Winder` (Winter)
+- **-ld** → **-ld**: `Feld` (Feld), `ald` (alt), `Geld` (Geld)
+- **-cht** → **-cht**: `gmachd` (gemacht), `Noochd` (Nacht), `Recht` (Recht)
+- **-ck** → **-gg** (common but not universal): `dreggich` (dreckig), `Dregg` (Dreck)
+  - **BUT**: `Glück` often stays `Glügg` or `Glück` (both acceptable)
 
-## Pronouns & Articles
+### Consonant Softening
+Standard German fortis (hard) consonants often become lenis (soft):
+- **p/pp** → **b**: `Subb` (Suppe), but not universal
+- **t/tt** → **d**: `middn` (mitten), `Budder` (Butter)
+- **k/ck** → **g/gg**: `dreggich` (dreckig), `Dregg` (Dreck)
 
-### Personal Pronouns
-- **ich** → **i**
-- **du** → **du**
-- **er/sie/es** → **er/se/es**
-- **wir** → **mir**
-- **ihr** → **ihr/enk**
-- **sie** (plural) → **se**
+**Note**: This is tendency, not a rule. When unsure, preserve Standard German spelling.
 
-### Articles & Demonstratives
-- **der/die/das** → **der/die/des**
-- **ein/eine/ein** → **a/a/a** (e.g., `a Madla` = ein Mädchen)
-- **den** → **den/'n** (e.g., `in'n Forst` = in den Forst)
-- **dem** → **dem/am** (e.g., `am Dooch` = an dem Tag)
-- **dieser/diese** → **dea/die**
+### Final Consonant Reductions
+- **-en** → **-n** or **-a**: `lassn` (lassen), `macha` (machen)
+- **-em** → **-m** or **-am**: `seim` (seinem), `am Weg` (am Weg)
+- **-er** → **-a** or **-er**: `widder/widda` (wieder), `anner` (anderer)
 
-### Dative Plural
-- **den (Dat. Pl.)** → **de**: `mit de Leit` (mit den Leuten), `vo de Waggerla` (von den Kindern)
+### Special Consonant Spellings
+- **ch**: Generally preserved as in Standard German → `mach`, `noch`, `Dach`
+- **sch**: Preserved → `schee` (schön), `Fisch` (Fisch)
+- **pf**: Often simplified → `Apfl` or `Afl` (Apfel) — both acceptable
 
-## Verb Conjugation Patterns
+## Pronouns
 
-### Present Tense (sein/haben/werden)
-- **sein**: i bin, du bist, er is, mir san, ihr seid, se san
-- **haben**: i hob, du host, er hod/hot, mir ham/hom, ihr hobts, se ham/hom
-- **werden**: i werd, du werst, er werd, mir wern, ihr werdts, se wern
+### Personal Pronouns (Subject)
+| Person | Standard | Ansbach |
+|--------|----------|---------|
+| 1sg | ich | **i** |
+| 2sg | du | **du** |
+| 3sg.m | er | **er** |
+| 3sg.f | sie | **se** |
+| 3sg.n | es | **es** |
+| 1pl | wir | **mir** |
+| 2pl | ihr | **ihr** |
+| 3pl | sie | **se** |
 
-### Regular Verbs (-en → -a)
-- **machen**: i mach, du machst, er macht, mir macha
-- **helfen**: i hilf, du hilfst, er hilft, mir helfa
-- **sagen**: i sach, du sachst, er sachd, mir sacha
+### Object Pronouns
+- **mich/mir** → **mi/mer**
+- **dich/dir** → **di/der**
+- **ihm** → **ihm** 
+- **ihr** (Dat. fem.) → **era**
+- **uns** → **uns**
+- **euch** → **eich**
 
-### Past Tense (g- Prefix)
-- Simple past often avoided, use perfect tense instead
-- Perfect: **hob/hot + g-participle**
-  - `I hob gmacht` (Ich habe gemacht)
-  - `Er hod gsachd` (Er hat gesagt)
-  - `Mir ham gsehn` (Wir haben gesehen)
+### Possessive Pronouns
+- **mein** → **mei**
+- **dein** → **dei**
+- **sein** → **sei**
+- **unser** → **unser**
+- **euer** → **eier**
 
-## Common Words & Expressions
+## Articles & Determiners
 
-### Basic Vocabulary
-- **amol** = einmal, once upon a time
-- **do/doa** = da, dort (there)
-- **waar** = war (was)
-- **wor** = war (alternative)
-- **ham/hom** = haben (have)
-- **hod/hot** = hat (has)
-- **san** = sind (are)
-- **is** = ist (is)
-- **wos** = was (what)
-- **wo** = wo (where)
-- **wie** = wie (how)
-- **wanns** = wenn es (when it)
-- **wers** = wer es (who)
+### Definite Articles
+| Case | Masc | Fem | Neut | Plural |
+|------|------|-----|------|--------|
+| Nom | **der** | **die** | **des/s** | **die** |
+| Acc | **den/'n** | **die** | **des/s** | **die** |
+| Dat | **dem/am** | **der** | **dem/am** | **de/den** |
+| Gen | (avoided - use `vo` + Dat) |
 
-### Adjectives & Adverbs
-- **gut** → **guad/gud** (good)
-- **groß** → **groas/groß** (big)
-- **klein** → **klaa/klaan** (small)
-- **schön** → **schee/scheen** (beautiful)
-- **alt** → **ald/alt** (old)
-- **viel** → **viel** (much)
-- **mehr** → **mehr** (more)
-- **ganz** → **ganz** (whole)
-- **sehr** → **fei** (very, really)
+### Indefinite Articles
+- **ein/eine/ein** → **a/a/a**: `a Madla` (ein Mädchen), `a Haus` (ein Haus)
+- **kein/keine/kein** → **kaa/kaa/kaa**: `kaa Geld` (kein Geld)
 
-### Diminutives (-lein → -la)
-Very common in Franconian! Shows affection or smallness:
-- **Häuschen** → **Häusla** (little house)
-- **Mädchen** → **Madla** (girl)
-- **Kindchen** → **Kindla** (little child)
-- **Herzchen** → **Herzla** (little heart)
-- **Körnchen** → **Körnla** (little grain)
-- **Kästen** → **Kästla** (little box)
-- **Wagen** → **Waggerla** (little child/baby)
+### Demonstratives
+- **dieser/diese/dieses** → **dea/die/des**
+- **jener** → rarely used; use `dea do` (that one there)
 
-### Common Particles & Fillers
-- **halt** = halt, just (modal particle)
-- **fei** = fei, really (emphasis)
-- **denn** = denn, then
-- **no** = noch, still
-- **scho** = schon, already
-- **aa** = auch, also
-- **ned/net** = nicht, not
-- **bloß** = bloß, nur, only
+### Dative Plural Marker
+- **den (Dat.Pl.)** → **de**: `mit de Leit` (mit den Leuten), `vo de Kinner` (von den Kindern)
+
+## Verb Conjugation
+
+### Auxiliary Verbs
+
+**sein (to be)**
+| Person | Conjugation |
+|--------|-------------|
+| i | **bin** |
+| du | **bist** |
+| er/se/es | **is** |
+| mir | **san** |
+| ihr | **seid/seids** |
+| se | **san** |
+
+**haben (to have)**
+| Person | Conjugation |
+|--------|-------------|
+| i | **hob** |
+| du | **host** |
+| er/se/es | **hod/hot** |
+| mir | **ham/hom** |
+| ihr | **hobts** |
+| se | **ham/hom** |
+
+**Note**: `ham` vs. `hom` is regional variation. Choose one and be consistent!
+
+**werden (to become)**
+| Person | Conjugation |
+|--------|-------------|
+| i | **werd** |
+| du | **werst** |
+| er/se/es | **werd** |
+| mir | **wern** |
+| ihr | **werdts** |
+| se | **wern** |
+
+### Regular Verb Patterns
+- **Infinitive -en** → **-a**: `macha`, `sacha`, `locha`, `helfa`
+- **3rd person singular** often adds **-d** for /t/: `er machd`, `se sachd`
+
+### Past Tense Formation
+- **Simple past**: Rarely used (mostly `waar`, `hod`)
+- **Perfect tense**: **haben/sein + g-participle**
+  - `I hob gmacht` (I made/did)
+  - `Er hod gsachd` (He said)
+  - `Mir san gwen` (We were)
+  - `Se hod gsehn` (She saw)
+
+### Modal Verbs
+- **können** → **kenna**: `i ko`, `du kost`, `er ko`, `mir kenna`
+- **müssen** → **müassn**: `i muass`, `du muasst`, `er muass`, `mir müassn`
+- **wollen** → **woin**: `i wui`, `du wuist`, `er wui`, `mir woin`
+- **sollen** → **soin**: `i soi`, `du soist`, `er soi`, `mir soin`
+
+## Diminutives
+
+**The -la Suffix** (extremely productive in Ansbach Franconian!)
+
+### Formation Rules
+- **-chen/-lein** → **-la** or **-le** (use `-la` for consistency)
+- Add to noun stems, often with umlaut:
+  - `Haus` → **Häusla** (little house)
+  - `Mädchen` → **Madla** (girl)
+  - `Herz` → **Herzla** (little heart)
+  - `Garten` → **Gärtla** (little garden)
+  - `Kasten` → **Kästla** (little box)
+
+### Usage
+- Expresses smallness, affection, or endearment
+- Very common in everyday speech and storytelling
+- Can be added to almost any noun
+- Often preferred over Standard German diminutive
+
+## Common Vocabulary
+
+### Essential Words
+| Standard | Ansbach | Meaning |
+|----------|---------|---------|
+| einmal | **amol** | once, once upon a time |
+| da/dort | **doa/do** | there |
+| war | **waar/wor** | was |
+| haben | **ham/hom** | have |
+| hat | **hod/hot** | has |
+| sind | **san** | are |
+| ist | **is** | is |
+| was | **wos** | what |
+| wo | **wo** | where |
+| wie | **wie** | how/as/when |
+| wenn es | **wanns** | when it |
+| nicht | **ned/net** | not |
+| nichts | **nix** | nothing |
+| auch | **aa** | also |
+| schon | **scho** | already |
+| noch | **no** | still/yet |
+| nur | **bloß/nuur** | only |
+| gut | **guad/gud** | good |
+| groß | **groas** | big |
+| klein | **klaa** | small |
+| schön | **schee** | beautiful |
+| alt | **ald** | old |
+
+### Modal Particles (Critical for Authenticity!)
+- **fei**: Emphasis ("really, actually, you know")
+  - `Des is fei guad!` (That's really good!)
+- **halt**: Resignation ("just, simply")
+  - `Is halt so.` (It's just like that.)
+- **denn**: Question softener
+  - `Wos is denn?` (What's the matter?)
+- **bloß**: "Only, just"
+  - `Bloß a bissla` (Just a little)
+- **scho**: "Already, sure"
+  - `Des werd scho!` (It'll work out!)
 
 ### Prepositions
-- **in** → **in/i** (in, into)
-- **an** → **an/a** (at, on)
-- **auf** → **auf/aufm** (on, upon)
-- **mit** → **mid/mit** (with)
-- **von** → **vo** (from, of)
-- **zu** → **zu** (to)
-- **bei** → **bei** (at, by)
-- **über** → **über/iber** (over, about)
+| Standard | Ansbach | Notes |
+|----------|---------|-------|
+| in | **in/i** | i + consonant, in + vowel |
+| an/am | **a/am** | Contraction common |
+| auf | **auf/aufm** | aufm = auf dem |
+| mit | **mid/mit** | Regional variation |
+| von | **vo** | Always vo |
+| zu | **zu/zum** | |
+| bei | **bei/beim** | |
+| über | **über/iber** | Regional variation |
+| nach | **noch/noa** | |
 
-## Spelling Variations
+## Spelling Conventions
 
-Some words have acceptable variations:
-- **haben**: ham/hom (regional preference)
-- **war**: waar/wor (regional preference)
-- **gut**: guad/gud (regional preference)
-- **mit**: mid/mit (regional preference)
-- **über**: über/iber (regional preference)
-- **nicht**: ned/net (regional preference)
+### Preferred vs. Acceptable Variants
 
-Choose one form and stay consistent within a text!
+**Preferred** (use for consistency):
+- `ham` (not hom) — unless specifically Ansbach-Stadt variety
+- `waar` (not wor) — unless archaic/elevated style
+- `guad` (not gud) — more characteristic
+- `mid` (not mit) — more dialectal
+- `ned` (not net) — regional preference
 
-## Example Sentences
+**Choose one variant per text and maintain consistency!**
 
-### From Reference Texts
+### Contractions & Elisions
+Common contractions:
+- `in den` → **in'n**: `in'n Forst` (in den Forst)
+- `an dem` → **am**: `am Dooch` (an dem Tag)
+- `zu dem` → **zum**: `zum Haus` (zu dem Haus)
+- `von dem` → **vom**: `vom Berg` (von dem Berg)
+- `wenn es` → **wanns**: `wanns kummd` (wenn es kommt)
+- `haben wir` → **hammer**: `hammer Zeit` (haben wir Zeit)
 
-1. **Es waar amol a junga Handwergsbursch, allaans in seim klaan Häusla.**
-   - _Es war einmal ein junger Handwerksgeselle, allein in seinem kleinen Häuschen._
+### Capitalization
+- **Nouns**: Capitalize as in Standard German
+- **Adjectives as nouns**: Capitalize → `des Scheene` (the beautiful thing)
+- **Pronouns**: Lowercase (except formal Sie, rarely used in dialect)
 
-2. **Die Acherla ham verzweifelt gsucht, obber ham bloß leere Schaaln gfundn.**
-   - _Die Eichhörnchen haben verzweifelt gesucht, aber haben bloß leere Schalen gefunden._
+## Example Sentences (Annotated)
 
-3. **Wer hilft mer beim Weizn säen? I fei ned.**
-   - _Wer hilft mir beim Weizen säen? Ich wirklich nicht._
+### Narrative Examples
 
-4. **Die klanne rote Henna hod a gmüdlichs Häusla ghabt mid am rotn Ziegldach.**
-   - _Die kleine rote Henne hatte ein gemütliches Häuschen mit einem roten Ziegeldach._
+**Es waar amol a junga Handwergsbursch, allaans in seim klaan Häusla.**
+- `waar` (was), `amol` (einmal), `junga` (junger), `allaans` (allein), `seim` (seinem), `klaan` (kleinen), `Häusla` (Häuschen)
+- _Once upon a time there was a young journeyman, all alone in his little house._
 
-5. **Mir ham joa nix! Do is der Graffberd in'n Forst kumma.**
-   - _Wir haben ja nichts! Da ist der Graubart in den Forst gekommen._
+**Die Acherla ham verzweifelt gsucht, obber ham bloß leere Schaaln gfundn.**
+- `Acherla` (Eichhörnchen, diminutive), `ham` (haben), `gsucht` (gesucht, g-prefix!), `obber` (aber), `bloß` (nur), `gfundn` (gefunden, g-prefix!)
+- _The little squirrels desperately searched, but only found empty shells._
 
-## Narrative Style Elements
+**Die klanne rote Henna hod a gmüdlichs Häusla ghabt mid am rotn Ziegldach.**
+- `klanne` (kleine), `hod` (hatte), `gmüdlichs` (gemütliches), `ghabt` (gehabt, g-prefix!), `mid` (mit), `am` (einem), `rotn` (roten)
+- _The little red hen had a cozy little house with a red tile roof._
 
-### Story Openings
-- **Es waar amol...** = Es war einmal... (Once upon a time...)
-- **Amol, in am...** = Einmal, in einem... (Once, in a...)
+### Dialogue Examples
+
+**"Wer hilft mer beim Weizn säen?" - "I fei ned!"**
+- `mer` (mir), `beim` (beim), `säen` (säen), `fei` (really, modal particle), `ned` (nicht)
+- _"Who helps me sow wheat?" - "Not me, really!"_
+
+**"Mir ham joa nix!" - "Do is der Graffberd kumma."**
+- `ham` (haben), `joa` (ja), `nix` (nichts), `Graffberd` (Graubart), `kumma` (gekommen)
+- _"We have nothing!" - "Then Graybeard came."_
+
+## Advanced Grammar Notes
+
+### Word Order
+Generally follows Standard German, with some differences:
+- **V2 word order** in main clauses (verb-second)
+- **Verb-final** in subordinate clauses
+- **Topicalization** common for emphasis: `Des Häusla, des waar schee.`
+
+### Negation
+- **Primary negation**: `ned/net` (nicht)
+  - `I ko ned` (Ich kann nicht)
+- **Negative pronouns**: `nix` (nichts), `kaans` (keins), `niemads` (niemand)
+- **Double negation** acceptable in some contexts: `I hob aa nix ned gsehn` (emphatic)
+
+### Question Formation
+- **Yes/no questions**: Verb-first
+  - `Host du Zeit?` (Hast du Zeit?)
+- **Wh-questions**: Wh-word + verb-second
+  - `Wos machst du?` (Was machst du?)
+  - `Wo is des?` (Wo ist das?)
+
+### Relative Clauses
+- **wo** used as universal relative pronoun:
+  - `Des Madla, wo do wohnt...` (Das Mädchen, das dort wohnt...)
+  - Can replace der/die/das in most contexts
+
+## Narrative & Stylistic Conventions
+
+### Story Openings (Märchen Style)
+- **Es waar amol...** = Once upon a time...
+- **Amol, in am...** = Once, in a...
+- **Vor langer Zeit...** = Long ago...
 
 ### Emphatic Constructions
-- **fei ned** = wirklich nicht (really not)
-- **aa ned** = auch nicht (also not)
-- **bloß** = nur, bloß (only, just)
-- **halt** = halt, eben (just, simply)
+- **fei ned** = really not, definitely not
+- **aa ned** = also not, not either
+- **gar ned** = not at all
+- **überhaupt ned** = not at all, absolutely not
 
-### Temporal Markers
-- **Do** = da, dann (then, there)
-- **wie** = als, wenn (when, as)
-- **bis** = bis (until)
-- **noch** → **no** = noch (still, yet)
+### Temporal & Sequential Markers
+- **Do** = then, there (very common story marker)
+- **Wie** = when, as (temporal conjunction)
+- **Bis** = until
+- **No** = still, yet (noch)
+- **Scho** = already
+- **Amol** = once, one time
 
-## Reference Texts
+### Reported Speech
+- Often uses direct speech instead of indirect
+- Or simplified with `dass`:
+  - `Er hod gsachd, dass er kummd.` (Er hat gesagt, dass er kommt.)
 
-The following texts demonstrate authentic Ansbach Franconian orthography and can serve as style models:
+## Reference & Style Models
 
-1. **Die Gschichd vo Graffberd und die Acherla** - Folk tale about squirrels and injustice
-2. **Des Eiserne Herzla** - Story about a craftsman and an iron watch
-3. **Die düchdige klaane rote Henna** - The industrious little red hen (märchen)
+The following authentic texts demonstrate proper orthography:
+1. **Die Gschichd vo Graffberd und die Acherla** — Folk justice tale
+2. **Des Eiserne Herzla** — Craftsman's moral story
+3. **Die düchdige klaane rote Henna** — Industrious hen fable
 
-These texts exemplify:
-- Natural narrative flow
-- Consistent g-prefix usage
-- Appropriate diminutives (-la)
-- Authentic dialogue patterns
-- Regional vocabulary choices
+**Key features** to emulate:
+- Natural narrative flow with dialect markers (`do`, `amol`, `fei`)
+- Consistent g-prefix in all past participles
+- Liberal use of diminutives (`-la`) for character and warmth
+- Authentic dialogue with modal particles
+- Regional vocabulary choices (not High German cognates)
 
-## Notes on Usage
-
-- This orthography prioritizes **readability** while maintaining authentic phonology
-- When uncertain about specific words, consult the **BDO database** via MCP
-- **Stay consistent** within a single text (pick one variant for hebben: ham vs. hom)
-- The **g-prefix** is non-negotiable for past participles
-- **Diminutives** (-la) are very common and show regional character
-- Modern concepts may require German loanwords with Franconian phonology
-
-## For MCP Server Integration
+## Integration with BDO Database (MCP)
 
 When using `mcp__franconian-dialect__find_franconian_equivalent`:
-1. The BDO returns raw phonetic transcriptions (e.g., "ō keina", "die Äbīre")
-2. **Adapt these to our orthography system** for consistency
-3. Extract the actual dialect word from evidence text (beleg-text)
-4. Apply our orthographic conventions (g-prefix, -la diminutives, etc.)
-5. Verify regional authenticity (Landkreis Ansbach preferred)
 
-Example adaptation:
-- BDO returns: `"die Äbīre schmecke am beste"`
-- Extract: `Äbīre` or `Äbirn` (normalized)
-- Apply: `Äbirn` (consistent with our orthography)
+### Adaptation Workflow
+1. **Query BDO** for word/phrase
+2. **Extract phonetic form** from evidence (beleg-text)
+3. **Convert to orthography** using these rules:
+   - Phonetic `ō` → write `oo` or `oa` (check context)
+   - Phonetic `ā` → write `aa`
+   - Phonetic `ē` → write `ee`
+   - IPA /ɡ/ prefix → always write `g-`
+4. **Verify regional authenticity** (prioritize Landkreis Ansbach)
+5. **Normalize**: Apply consistent spelling choices
+
+### Example Adaptation
+BDO query: "Kartoffel"
+BDO returns: "die Äbīre" (phonetic), beleg: "die Äbire san scho reif"
+Extract: Äbire
+Normalize: Äbirn (following -en → -n reduction pattern)
+Final form: Äbirn
+
+### Troubleshooting
+- If BDO form conflicts with our rules → **prioritize authenticity** (use BDO)
+- If BDO shows variation → **choose form closest to our conventions**
+- If no BDO entry → **derive from Standard German** using sound change rules
+
+## Quick Reference Checklist
+
+Before finalizing any Ansbach Franconian text:
+
+✓ All past participles have **g-prefix** (gmacht, gwen, gfundn)  
+✓ Infinitives end in **-a** not -en (macha, helfa)  
+✓ **Diminutives** use -la (Häusla, Madla, Kindla)  
+✓ **Consistent variants** throughout (ham not hom, waar not wor)  
+✓ **Modal particles** present (fei, halt, bloß, scho)  
+✓ **Pronouns** dialectal (i, mir, se not ich, wir, sie)  
+✓ **Long vowels** marked correctly (aa, oo, ee)  
+✓ **Natural flow** with do, amol, wie for narrative  
+
+---
+
+**Version**: 2.0 (Revised)  
+**Date**: October 2025  
+**Basis**: Authentic Ansbach-area texts, BDO database, regional informant data

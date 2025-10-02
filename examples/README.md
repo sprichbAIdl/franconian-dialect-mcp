@@ -104,14 +104,19 @@ Translate this modern German text into authentic Ansbach Franconian:
 # Query the MCP server for authentic Franconian forms
 result = mcp__franconian-dialect__find_franconian_equivalent(
     german_word="Kartoffel",
-    scope="landkreis_ansbach"
+    scope="landkreis_ansbach",
+    limit=20  # Limit to top 20 results (default), max 100
 )
 
-# Returns 493 authentic attestations including:
-# - "Äbirn" (most common)
-# - "Ebbern" (also frequent)
-# - "die Äbīre" (with example usage)
-# - Evidence from specific villages
+# Returns top 20 attestations sorted by confidence from 493 total:
+# - "o eggn" (95% confidence)
+# - "ohgrubbern" (95% confidence)
+# - "ō keina" (95% confidence)
+# - Evidence from specific villages in Ansbach region
+#
+# Note: Without limit parameter, "Kartoffel" would return all 493 attestations!
+# That's 60,000+ tokens - far exceeding the 25k MCP response limit.
+# The limit parameter (default: 20, max: 100) keeps responses manageable.
 ```
 
 ### What the MCP Provides
