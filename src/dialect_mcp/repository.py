@@ -64,11 +64,11 @@ class ValidatedBDOResponse:
     def _validate_and_extract_translation(
         artikel: ET.Element, german_word: str
     ) -> FranconianTranslation | None:
-        # Extract lemma (Franconian word)
+        # Extract lemma (the German dictionary headword - NOT the Franconian form!)
         lemma_elem = artikel.find(".//lemma")
         if lemma_elem is None or not lemma_elem.text:
             return None
-        franconian_word = lemma_elem.text.strip()
+        lemma = lemma_elem.text.strip()
 
         # Extract meaning (should match or relate to German word)
         meaning_elem = artikel.find(".//bedeutung")
@@ -77,6 +77,7 @@ class ValidatedBDOResponse:
         meaning = meaning_elem.text.strip()
 
         # Find evidence with location preference for Ansbach area
+        # The beleg-text contains the ACTUAL Franconian transcription!
         best_evidence = None
         best_location = None
         fallback_evidence = None
@@ -88,10 +89,12 @@ class ValidatedBDOResponse:
 
             if evidence_elem is None or region_elem is None:
                 continue
+            if not evidence_elem.text:
+                continue
 
             town = region_elem.get("ort", "").strip()
             county = region_elem.get("landkreis", "").strip()
-            evidence_text = evidence_elem.text.strip() if evidence_elem.text else ""
+            evidence_text = evidence_elem.text.strip()
             location_text = f"{town}, Landkreis {county}" if county else town
 
             # Prioritize Ansbach area locations
@@ -107,6 +110,10 @@ class ValidatedBDOResponse:
         # Use Ansbach evidence if found, otherwise fallback
         final_evidence = best_evidence or fallback_evidence
         final_location = best_location or fallback_location
+
+        # Use the evidence text as the "Franconian word"
+        # This contains the actual dialect transcription/usage
+        franconian_word = final_evidence
 
         if not final_evidence or not final_location:
             return None
