@@ -23,8 +23,25 @@ class SemanticConfidenceCalculator:
     Calculates semantic confidence scores for translation matches.
 
     Considers semantic relationship types (exact, derived, antonym, contextual),
-    part-of-speech consistency, and evidence quality.
+    part-of-speech consistency, evidence quality, and geographic authenticity.
     """
+
+    # Core Ansbach region towns (most authentic Ansbach dialect)
+    CORE_ANSBACH_TOWNS = [
+        "Ansbach", "Herrieden", "Merkendorf", "Lehrberg", "Lichtenau",
+        "Neuendettelsau", "Heilsbronn", "Windsbach", "Sachsen b.Ansbach"
+    ]
+
+    # Peripheral towns with strong influence from neighboring dialects
+    PERIPHERAL_BAVARIAN_TOWNS = [
+        "Mönchsroth",  # Very close to Bavaria, strong Bavarian influence
+        "Wörnitz",     # Southeastern edge, Bavarian influenced
+    ]
+
+    PERIPHERAL_SWABIAN_TOWNS = [
+        "Dinkelsbühl",  # Western edge, Swabian influence
+        "Feuchtwangen", # Western area
+    ]
 
     # Common German derivational suffixes for nouns from adjectives
     DERIVATIONAL_SUFFIXES = [
@@ -56,6 +73,7 @@ class SemanticConfidenceCalculator:
         meaning: str,
         franconian_word: str,
         grammar: str | None = None,
+        location: str | None = None,
     ) -> float:
         """
         Calculate semantic confidence score (0.0 - 1.0).
@@ -65,6 +83,7 @@ class SemanticConfidenceCalculator:
             meaning: The meaning/definition from BDO
             franconian_word: The Franconian evidence text
             grammar: Optional grammar information
+            location: Optional location string (e.g., "Mönchsroth, Landkreis AN")
 
         Returns:
             Confidence score between 0.0 and 1.0
@@ -89,6 +108,13 @@ class SemanticConfidenceCalculator:
             franconian_word
         )
         base_score += evidence_adjustment
+
+        # Geographic authenticity adjustment
+        if location:
+            geo_adjustment = SemanticConfidenceCalculator._calculate_geographic_adjustment(
+                location
+            )
+            base_score += geo_adjustment
 
         # Clamp to valid range [0.0, 1.0]
         return max(0.0, min(1.0, base_score))
@@ -136,7 +162,31 @@ class SemanticConfidenceCalculator:
             if words_before and any(mod in " ".join(words_before) for mod in modifiers):
                 return 0.65  # Modified meaning, not direct match
 
-            # Clean match at start
+            # Check for qualifiers AFTER the word that make it more specific
+            # Examples: "Kartoffel, minderwertig", "Kartoffel, die schon im Juli..."
+            # Pattern: "<word>, <qualifier>" means specific type/variant
+            if after_word.startswith(","):
+                # Has additional qualification after comma
+                qualifier_text = after_word[1:].strip()
+
+                # Quality/size/time qualifiers indicate specific variant
+                specific_qualifiers = [
+                    "minderwertig", "verkümmert", "die schon", "die zur",
+                    "klein", "groß", "alt", "neu", "jung", "dick", "dünn",
+                    "früh", "spät", "erste", "letzte"
+                ]
+
+                if any(qual in qualifier_text for qual in specific_qualifiers):
+                    return 0.85  # Specific variant, not general term
+
+                # Long description after comma = very specific
+                if len(qualifier_text.split()) > 5:
+                    return 0.80  # Detailed specific variant
+
+                # Short comma phrase = synonym or brief qualifier
+                return 0.90  # Still good but slightly less general
+
+            # Clean match at start with no qualifiers
             return 0.95
 
         # ANTONYM: meaning is the opposite (strong negative signal!)
@@ -363,6 +413,41 @@ class SemanticConfidenceCalculator:
         # Long sentence (>10 words) = likely example/explanation
         return -0.08
 
+    @staticmethod
+    def _calculate_geographic_adjustment(location: str) -> float:
+        """
+        Calculate adjustment based on geographic authenticity for Ansbach dialect.
+
+        Boosts results from core Ansbach towns, penalizes peripheral towns with
+        strong influence from neighboring dialects (Bavarian, Swabian).
+        """
+        location_lower = location.lower()
+
+        # Extract town name (before comma if present)
+        town = location.split(',')[0].strip() if ',' in location else location.strip()
+
+        # Core Ansbach region = boost (most authentic)
+        for core_town in SemanticConfidenceCalculator.CORE_ANSBACH_TOWNS:
+            if core_town.lower() in location_lower:
+                return 0.08  # Significant boost for core Ansbach towns
+
+        # Peripheral Bavarian-influenced towns = penalty
+        for peripheral_town in SemanticConfidenceCalculator.PERIPHERAL_BAVARIAN_TOWNS:
+            if peripheral_town.lower() in location_lower:
+                return -0.15  # Strong penalty - these use Bavarian/Oberfranken words
+
+        # Peripheral Swabian-influenced towns = moderate penalty
+        for peripheral_town in SemanticConfidenceCalculator.PERIPHERAL_SWABIAN_TOWNS:
+            if peripheral_town.lower() in location_lower:
+                return -0.10  # Moderate penalty - Swabian influence
+
+        # Other Landkreis Ansbach towns = neutral (no adjustment)
+        if "landkreis an" in location_lower:
+            return 0.0
+
+        # Unknown/other regions = no adjustment
+        return 0.0
+
 
 class ValidatedBDOResponse:
     def __init__(
@@ -481,9 +566,9 @@ class ValidatedBDOResponse:
             else None
         )
 
-        # Calculate confidence using semantic relationship analysis
+        # Calculate confidence using semantic relationship analysis and geographic authenticity
         confidence = SemanticConfidenceCalculator.calculate_confidence(
-            german_word, meaning, franconian_word, grammar
+            german_word, meaning, franconian_word, grammar, final_location
         )
 
         return FranconianTranslation(

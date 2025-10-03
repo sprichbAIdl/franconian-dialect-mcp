@@ -67,7 +67,7 @@ async def find_franconian_equivalent(
 
     Args:
         german_word: Standard German word (e.g., "Wurst", "Haus", "klein")
-        scope: Search scope - 'landkreis_ansbach' or 'city_ansbach'
+        scope: Search scope - 'landkreis_ansbach' (default) or 'city_ansbach'
         town: Optional specific town name in Landkreis Ansbach
         exact_match: Whether to require exact matches in meanings
         limit: Maximum number of results to return (default: 5, max: 20)
