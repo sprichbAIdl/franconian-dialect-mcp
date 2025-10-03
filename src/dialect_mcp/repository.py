@@ -18,6 +18,352 @@ from .validation import ValidatedTranslationRequest
 from .http_client import MinimalistHTTPClient
 
 
+class SemanticConfidenceCalculator:
+    """
+    Calculates semantic confidence scores for translation matches.
+
+    Considers semantic relationship types (exact, derived, antonym, contextual),
+    part-of-speech consistency, and evidence quality.
+    """
+
+    # Common German derivational suffixes for nouns from adjectives
+    DERIVATIONAL_SUFFIXES = [
+        "heit",   # Freundlichkeit, Schönheit
+        "keit",   # Dankbarkeit, Fröhlichkeit
+        "ung",    # Wanderung (from wandern)
+        "schaft", # Freundschaft
+    ]
+
+    # Common adjective comparison suffixes
+    COMPARATIVE_SUFFIXES = [
+        "er",     # schöner, größer
+        "ere",    # schönere
+        "erer",   # schönerer
+    ]
+
+    SUPERLATIVE_SUFFIXES = [
+        "ste",    # schönste, größte
+        "ster",   # schönster
+        "stes",   # schönstes
+    ]
+
+    # Antonym prefixes and patterns
+    ANTONYM_PREFIXES = ["un", "nicht ", "in", "miss"]
+
+    @staticmethod
+    def calculate_confidence(
+        german_word: str,
+        meaning: str,
+        franconian_word: str,
+        grammar: str | None = None,
+    ) -> float:
+        """
+        Calculate semantic confidence score (0.0 - 1.0).
+
+        Args:
+            german_word: The German query word
+            meaning: The meaning/definition from BDO
+            franconian_word: The Franconian evidence text
+            grammar: Optional grammar information
+
+        Returns:
+            Confidence score between 0.0 and 1.0
+        """
+        german_lower = german_word.lower().strip()
+        meaning_lower = meaning.lower().strip()
+
+        # Base score from semantic relationship
+        base_score = SemanticConfidenceCalculator._calculate_semantic_relationship_score(
+            german_lower, meaning_lower
+        )
+
+        # Grammar consistency adjustment
+        if grammar:
+            grammar_adjustment = SemanticConfidenceCalculator._calculate_grammar_adjustment(
+                german_lower, meaning_lower, grammar
+            )
+            base_score += grammar_adjustment
+
+        # Evidence quality adjustment
+        evidence_adjustment = SemanticConfidenceCalculator._calculate_evidence_quality_adjustment(
+            franconian_word
+        )
+        base_score += evidence_adjustment
+
+        # Clamp to valid range [0.0, 1.0]
+        return max(0.0, min(1.0, base_score))
+
+    @staticmethod
+    def _calculate_semantic_relationship_score(
+        german_lower: str, meaning_lower: str
+    ) -> float:
+        """Determine base confidence from semantic relationship type."""
+
+        # EXACT MATCH: meaning is exactly the word or starts with it
+        # Examples: "groß" → "groß", "sprechen" → "sprechen, reden"
+        if meaning_lower == german_lower:
+            return 0.95
+
+        # Meaning starts with the word followed by punctuation or space
+        # BUT check for qualifying words or if it's an action ABOUT the word
+        if meaning_lower.startswith(f"{german_lower},") or \
+           meaning_lower.startswith(f"{german_lower};") or \
+           meaning_lower.startswith(f"{german_lower} "):
+
+            # Split to see what comes after the word
+            after_word = meaning_lower[len(german_lower):].strip()
+
+            # Check for action verbs that indicate this is about DOING something to/with the word
+            # Examples: "Kinder schimpfen" = scolding children (not "children" itself)
+            action_verbs = ["schimpfen", "tadeln", "rufen", "holen", "bringen",
+                           "sehen", "hören", "machen", "tun", "haben", "geben",
+                           "nehmen", "bekommen", "kriegen", "spielen", "lernen"]
+
+            # If immediately followed by action verb, this is contextual, not the word itself
+            for verb in action_verbs:
+                if after_word.startswith(verb) or after_word.startswith(f", {verb}"):
+                    return 0.45  # Action involving the word, not word itself
+
+            # Check if there are qualifiers before the word that modify its meaning
+            # Examples: "unaufrichtig freundlich", "nicht gut", "sehr groß"
+            words_before = meaning_lower.split(german_lower)[0].strip().split()
+
+            # Qualifying/modifying words that change the core meaning
+            modifiers = ["nicht", "un", "kein", "ohne", "sehr", "zu", "unaufrichtig",
+                        "falsch", "pseudo", "schein", "kaum"]
+
+            # If preceded by modifiers, lower confidence
+            if words_before and any(mod in " ".join(words_before) for mod in modifiers):
+                return 0.65  # Modified meaning, not direct match
+
+            # Clean match at start
+            return 0.95
+
+        # ANTONYM: meaning is the opposite (strong negative signal!)
+        # Examples: "freundlich" → "unfreundlich", "gut" → "nicht gut"
+        if SemanticConfidenceCalculator._is_antonym(german_lower, meaning_lower):
+            return 0.30  # Low confidence - opposite meaning
+
+        # DERIVED NOUN FROM ADJECTIVE/VERB
+        # Examples: "freundlich" → "Freundlichkeit", "wandern" → "Wanderung"
+        for suffix in SemanticConfidenceCalculator.DERIVATIONAL_SUFFIXES:
+            derived_form = f"{german_lower}{suffix}"
+            if derived_form in meaning_lower:
+                # Check if it's a clean match (not part of longer word)
+                if SemanticConfidenceCalculator._is_clean_word_match(
+                    derived_form, meaning_lower
+                ):
+                    return 0.70  # Derived form - different POS but same semantic root
+
+        # Also check for adjective forms in meaning (e.g., "freundliches Wesen")
+        # This catches "freundlich" → "freundliches/freundlicher/freundliche"
+        for adj_suffix in ["es", "er", "e", "en", "em"]:
+            adj_form = f"{german_lower}{adj_suffix}"
+            if adj_form in meaning_lower:
+                # Check if it appears in first few words (likely definition)
+                words = meaning_lower.split()
+                if adj_form in words[:5]:
+                    return 0.75  # Inflected adjective in definition
+
+        # COMPARATIVE/SUPERLATIVE FORMS
+        # Examples: "groß" → "größer", "schön" → "schönste"
+        # Need to handle umlaut changes: groß → größer, alt → älter
+        stem_variants = SemanticConfidenceCalculator._apply_umlaut(german_lower)
+        for suffix in SemanticConfidenceCalculator.COMPARATIVE_SUFFIXES + \
+                      SemanticConfidenceCalculator.SUPERLATIVE_SUFFIXES:
+            for stem in stem_variants:
+                comparative_form = f"{stem}{suffix}"
+                if comparative_form in meaning_lower:
+                    return 0.85  # Inflected form - same POS, same meaning
+
+        # WORD APPEARS IN MEANING
+        # Distinguish between definition vs. contextual usage
+        if german_lower in meaning_lower:
+            # Get position of word in meaning
+            words_in_meaning = meaning_lower.split()
+
+            # Find the position of our query word
+            try:
+                word_position = words_in_meaning.index(german_lower)
+            except ValueError:
+                # Word is part of a compound, check substring match
+                word_position = 999  # Mark as late position
+
+            # Word in first position = likely direct definition
+            if word_position == 0:
+                return 0.80
+
+            # Word in positions 1-3 = could be definition or contextual
+            # Examples: "freundlich sein", "Kinder schimpfen" (contextual!)
+            elif word_position <= 2:
+                # Check if it's an action ABOUT the thing (lower confidence)
+                # Pattern: "<word> <verb>" = action involving word, not word itself
+                action_verbs = ["schimpfen", "tadeln", "rufen", "holen", "bringen",
+                               "sehen", "hören", "machen", "tun", "sein", "werden",
+                               "haben", "geben", "nehmen", "bekommen", "kriegen"]
+
+                # If next word is a verb, this is likely contextual (action involving the word)
+                if word_position + 1 < len(words_in_meaning):
+                    next_word = words_in_meaning[word_position + 1]
+                    if any(verb in next_word for verb in action_verbs):
+                        return 0.45  # Contextual - action involving the word
+
+                return 0.75  # Definition with the word early
+
+            # Word appears later = likely contextual/example
+            # Examples: "Person, die nur in der Öffentlichkeit freundlich ist"
+            else:
+                return 0.50
+
+        # PARTIAL WORD MATCH (any word from multi-word query)
+        # Examples: "sehr groß" → "groß"
+        german_words = german_lower.split()
+        if len(german_words) > 1:
+            for word in german_words:
+                if len(word) > 2 and word in meaning_lower:  # Skip short words (der, die, das)
+                    return 0.60
+
+        # NO CLEAR RELATIONSHIP
+        return 0.40
+
+    @staticmethod
+    def _apply_umlaut(word: str) -> list[str]:
+        """
+        Generate possible umlaut variants for comparative/superlative detection.
+
+        Returns list of possible forms including original and umlauted versions.
+        Examples: "groß" → ["groß", "größ"], "alt" → ["alt", "ält"]
+        """
+        variants = [word]  # Always include original
+
+        # Common umlaut transformations in German comparatives
+        umlaut_map = {
+            "a": "ä",
+            "o": "ö",
+            "u": "ü",
+            "au": "äu",
+        }
+
+        for old, new in umlaut_map.items():
+            if old in word:
+                # Replace last occurrence (typically the stem vowel)
+                pos = word.rfind(old)
+                umlauted = word[:pos] + new + word[pos + len(old):]
+                variants.append(umlauted)
+
+        return variants
+
+    @staticmethod
+    def _is_antonym(german_lower: str, meaning_lower: str) -> bool:
+        """Detect if meaning represents opposite of query word."""
+        # Check for negation prefixes
+        for prefix in SemanticConfidenceCalculator.ANTONYM_PREFIXES:
+            antonym_pattern = f"{prefix}{german_lower}"
+            if antonym_pattern in meaning_lower:
+                return True
+
+        # Check for "nicht <word>" pattern
+        if f"nicht {german_lower}" in meaning_lower:
+            return True
+
+        return False
+
+    @staticmethod
+    def _is_clean_word_match(word: str, text: str) -> bool:
+        """Check if word appears as complete word (not as substring of longer word)."""
+        # Simple heuristic: check if word is followed by space, comma, or end of string
+        index = text.find(word)
+        if index == -1:
+            return False
+
+        # Check character after word (if exists)
+        end_index = index + len(word)
+        if end_index < len(text):
+            next_char = text[end_index]
+            return next_char in [' ', ',', ';', '.', '!', '?', ')']
+
+        return True  # Word at end of text
+
+    @staticmethod
+    def _calculate_grammar_adjustment(
+        german_lower: str, meaning_lower: str, grammar: str
+    ) -> float:
+        """Calculate adjustment based on part-of-speech consistency."""
+        grammar_lower = grammar.lower()
+
+        # Extract POS from grammar string
+        # Examples: "Adjektiv", "Substantiv F", "Verb (schwach)"
+        result_pos = None
+        if "substantiv" in grammar_lower or "nomen" in grammar_lower:
+            result_pos = "noun"
+        elif "adjektiv" in grammar_lower:
+            result_pos = "adjective"
+        elif "verb" in grammar_lower:
+            result_pos = "verb"
+        elif "adverb" in grammar_lower:
+            result_pos = "adverb"
+
+        if not result_pos:
+            return 0.0  # No clear POS identified
+
+        # Detect expected POS from query word patterns (heuristic)
+        query_pos = SemanticConfidenceCalculator._guess_pos_from_word(german_lower)
+
+        if not query_pos:
+            return 0.0  # Can't determine query POS
+
+        # Same POS = small bonus
+        if query_pos == result_pos:
+            return 0.05
+
+        # Different POS = small penalty (unless it's a known derivation)
+        # Don't penalize derivational relationships we already scored high
+        return 0.0  # Neutral - derivational relationships already handled
+
+    @staticmethod
+    def _guess_pos_from_word(german_lower: str) -> str | None:
+        """Heuristically guess POS from German word patterns."""
+        # Common adjective endings
+        if any(german_lower.endswith(suffix) for suffix in [
+            "lich", "ig", "bar", "sam", "haft", "los"
+        ]):
+            return "adjective"
+
+        # Common noun endings (and capitalization in original - but we have lowercase)
+        if any(german_lower.endswith(suffix) for suffix in [
+            "heit", "keit", "ung", "schaft", "tum", "nis"
+        ]):
+            return "noun"
+
+        # Common verb endings
+        if any(german_lower.endswith(suffix) for suffix in [
+            "en", "eln", "ern", "igen", "ieren"
+        ]):
+            return "verb"
+
+        return None  # Can't determine
+
+    @staticmethod
+    def _calculate_evidence_quality_adjustment(franconian_word: str) -> float:
+        """Calculate adjustment based on evidence text quality."""
+        word_count = len(franconian_word.split())
+
+        # Single word = cleanest result
+        if word_count == 1:
+            return 0.05
+
+        # Short phrase (2-4 words) = still good
+        if word_count <= 4:
+            return 0.02
+
+        # Medium phrase (5-10 words) = contextual but acceptable
+        if word_count <= 10:
+            return 0.0
+
+        # Long sentence (>10 words) = likely example/explanation
+        return -0.08
+
+
 class ValidatedBDOResponse:
     def __init__(
         self, metadata: BDOMetadata, translations: list[FranconianTranslation]
@@ -135,9 +481,9 @@ class ValidatedBDOResponse:
             else None
         )
 
-        # Calculate confidence based on meaning match
-        confidence = ValidatedBDOResponse._calculate_confidence(
-            german_word, meaning, franconian_word
+        # Calculate confidence using semantic relationship analysis
+        confidence = SemanticConfidenceCalculator.calculate_confidence(
+            german_word, meaning, franconian_word, grammar
         )
 
         return FranconianTranslation(
@@ -150,21 +496,6 @@ class ValidatedBDOResponse:
             etymology=etymology,
             confidence=confidence,
         )
-
-    @staticmethod
-    def _calculate_confidence(
-        german_word: str, meaning: str, franconian_word: str
-    ) -> float:
-        """Calculate translation confidence score."""
-        # Simple heuristic - exact word match gives highest confidence
-        if german_word.lower() in meaning.lower():
-            return 0.95
-        # Partial match
-        elif any(word in meaning.lower() for word in german_word.lower().split()):
-            return 0.75
-        # Related meaning
-        else:
-            return 0.5
 
 
 class BDOParameterBuilder:
