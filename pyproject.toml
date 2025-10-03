@@ -1,11 +1,21 @@
 [project]
 name = "franconian-dialect-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "Franconian dialect translation MCP server using BDO API"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "httpx>=0.28.1",
-    "mcp>=1.13.0",
+    "mcp[cli]>=1.13.0",
     "pydantic>=2.11.7",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dialect_mcp"]
