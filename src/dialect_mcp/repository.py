@@ -325,3 +325,7 @@ class FranconianTranslationRepository:
         )
 
         return validated_response.translations
+
+    async def close(self) -> None:
+        """Close the repository and cleanup resources."""
+        await self._http_client.close()

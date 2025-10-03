@@ -6,13 +6,13 @@ FastMCP server with tools, resources, and prompts.
 
 from __future__ import annotations
 
-import asyncio
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
 
-from .domain import FranconianTranslation, ValidationError, BDOError
+from .domain import FranconianTranslation, ValidationError, BDOError, ErrorResponse
 from .service import FranconianTranslationService
 from .repository import FranconianTranslationRepository
 from .http_client import MinimalistHTTPClient
@@ -23,13 +23,25 @@ logger = logging.getLogger(__name__)
 
 
 def create_translation_service() -> FranconianTranslationService:
+    """Factory function to create a translation service with all dependencies."""
     http_client = MinimalistHTTPClient()
     repository = FranconianTranslationRepository(http_client)
     return FranconianTranslationService(repository)
 
 
-mcp = FastMCP("Franconian Translation Server")
-translation_service = create_translation_service()
+@asynccontextmanager
+async def lifespan() -> AsyncIterator[FranconianTranslationService]:
+    """Manage the lifecycle of the translation service."""
+    logger.info("Starting Franconian Translation Service")
+    service = create_translation_service()
+    try:
+        yield service
+    finally:
+        logger.info("Shutting down Franconian Translation Service")
+        await service.close()
+
+
+mcp = FastMCP("Franconian Translation Server", lifespan=lifespan)
 
 
 @mcp.tool()
@@ -62,11 +74,13 @@ async def find_franconian_equivalent(
         - find_franconian_equivalent("Haus", limit=5) → top 5 variants
         - find_franconian_equivalent("klein", limit=20) → top 20 variants
     """
+    service = mcp.ctx.get_dependencies()
+
     try:
         # Enforce reasonable limits to prevent MCP token overflow
         limit = max(1, min(limit, 50))  # Between 1 and 50
 
-        translations = await translation_service.translate_to_franconian(
+        translations = await service.translate_to_franconian(
             german_word, scope, town, exact_match
         )
 
@@ -77,18 +91,23 @@ async def find_franconian_equivalent(
         return translations[:limit]
 
     except ValidationError as e:
-        logger.error(f"Validation error: {e}")
-        raise ValueError(f"Invalid input: {e}")
+        logger.error(f"Validation error: {e}", exc_info=True)
+        raise ValueError(f"Invalid input: {e}") from e
     except BDOError as e:
-        logger.error(f"BDO API error: {e}")
-        raise RuntimeError(f"Translation search failed: {e}")
+        logger.error(f"BDO API error: {e}", exc_info=True)
+        raise RuntimeError(f"Translation search failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error in find_franconian_equivalent: {e}", exc_info=True)
+        raise RuntimeError(f"Translation search failed unexpectedly: {e}") from e
 
 
 @mcp.resource("franconian://word/{german_word}")
 async def get_franconian_word_info(german_word: str) -> str:
     """Get comprehensive information about Franconian translation of a German word."""
+    service = mcp.ctx.get_dependencies()
+
     try:
-        translations = await translation_service.translate_to_franconian(german_word)
+        translations = await service.translate_to_franconian(german_word)
 
         if not translations:
             return f"No Franconian equivalent found for '{german_word}' in the Ansbach region."
@@ -114,9 +133,15 @@ async def get_franconian_word_info(german_word: str) -> str:
 
         return result
 
+    except ValidationError as e:
+        logger.error(f"Validation error in word resource: {e}", exc_info=True)
+        return f"Invalid input for '{german_word}': {e}"
+    except BDOError as e:
+        logger.error(f"BDO API error in word resource: {e}", exc_info=True)
+        return f"Failed to retrieve Franconian information for '{german_word}': {e}"
     except Exception as e:
-        logger.error(f"Error in franconian word resource: {e}")
-        return f"Error retrieving Franconian information for '{german_word}': {e}"
+        logger.error(f"Unexpected error in word resource: {e}", exc_info=True)
+        return f"Unexpected error retrieving Franconian information for '{german_word}': {e}"
 
 
 @mcp.resource("franconian://examples")
@@ -186,20 +211,6 @@ async def translate_to_franconian_prompt(
 
 
 def run_server() -> None:
-    """Run the MCP server with proper cleanup."""
+    """Run the MCP server with proper cleanup via lifespan context."""
     logger.info("Starting Franconian Translation MCP Server")
-    try:
-        mcp.run()
-    finally:
-        logger.info("Shutting down server")
-
-        async def cleanup():
-            if hasattr(translation_service._repository, "_http_client"):
-                await translation_service._repository._http_client.close()
-
-        try:
-            loop = asyncio.get_event_loop()
-            if not loop.is_closed():
-                loop.run_until_complete(cleanup())
-        except RuntimeError:
-            pass
+    mcp.run()

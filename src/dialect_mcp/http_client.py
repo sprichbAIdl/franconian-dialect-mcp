@@ -20,6 +20,19 @@ class MinimalistHTTPClient:
         self._last_request_time: float = 0.0
         self._rate_limit_lock = asyncio.Lock()
 
+    async def __aenter__(self) -> MinimalistHTTPClient:
+        """Enter async context manager."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
+        """Exit async context manager and cleanup resources."""
+        await self.close()
+
     async def get_raw_response(self, url: str, params: dict[str, str]) -> str:
         await self._enforce_rate_limit()
 
@@ -46,6 +59,7 @@ class MinimalistHTTPClient:
             self._last_request_time = time.time()
 
     async def close(self) -> None:
+        """Close the HTTP client and cleanup resources."""
         if self._client:
             await self._client.aclose()
             self._client = None

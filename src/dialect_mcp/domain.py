@@ -140,3 +140,14 @@ class BDOMetadata(BaseModel):
     timestamp: str
     api_version: str = "1.0"
     licence: str = "CC-BY"
+
+
+# Structured error response models
+class ErrorResponse(BaseModel):
+    """Structured error response for MCP tools."""
+
+    model_config = ConfigDict(frozen=True)
+
+    error_type: str
+    message: str
+    details: dict[str, str] | None = None

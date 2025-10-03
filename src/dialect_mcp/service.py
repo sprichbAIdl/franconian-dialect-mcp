@@ -40,3 +40,7 @@ class FranconianTranslationService:
             )
 
         return sorted(translations, key=lambda t: t.confidence, reverse=True)
+
+    async def close(self) -> None:
+        """Close the service and cleanup resources."""
+        await self._repository.close()
