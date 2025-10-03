@@ -9,8 +9,10 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Context
+from mcp.server.session import ServerSession
 
 from .domain import FranconianTranslation, ValidationError, BDOError, ErrorResponse
 from .service import FranconianTranslationService
@@ -22,6 +24,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class AppContext:
+    """Application context holding shared resources."""
+    service: FranconianTranslationService
+
+
 def create_translation_service() -> FranconianTranslationService:
     """Factory function to create a translation service with all dependencies."""
     http_client = MinimalistHTTPClient()
@@ -30,12 +38,12 @@ def create_translation_service() -> FranconianTranslationService:
 
 
 @asynccontextmanager
-async def lifespan() -> AsyncIterator[FranconianTranslationService]:
+async def lifespan(app: FastMCP) -> AsyncIterator[AppContext]:
     """Manage the lifecycle of the translation service."""
     logger.info("Starting Franconian Translation Service")
     service = create_translation_service()
     try:
-        yield service
+        yield AppContext(service=service)
     finally:
         logger.info("Shutting down Franconian Translation Service")
         await service.close()
@@ -50,7 +58,7 @@ async def find_franconian_equivalent(
     scope: str = "landkreis_ansbach",
     town: str | None = None,
     exact_match: bool = False,
-    limit: int = 10,
+    limit: int = 5,
 ) -> list[FranconianTranslation]:
     """
     Find Franconian dialect equivalent(s) of a German word.
@@ -62,23 +70,25 @@ async def find_franconian_equivalent(
         scope: Search scope - 'landkreis_ansbach' or 'city_ansbach'
         town: Optional specific town name in Landkreis Ansbach
         exact_match: Whether to require exact matches in meanings
-        limit: Maximum number of results to return (default: 10, max: 50)
-               Note: Conservative default to prevent token overflow in MCP responses
+        limit: Maximum number of results to return (default: 5, max: 20)
+               Conservative default to prevent token overflow and focus on best matches
 
     Returns:
         List of FranconianTranslation objects with structured data (limited to top results)
         Results are sorted by confidence, so you get the best matches first
 
     Examples:
-        - find_franconian_equivalent("Wurst") → top 10 variants
-        - find_franconian_equivalent("Haus", limit=5) → top 5 variants
-        - find_franconian_equivalent("klein", limit=20) → top 20 variants
+        - find_franconian_equivalent("Wurst") → top 5 variants
+        - find_franconian_equivalent("Haus", limit=3) → top 3 variants
+        - find_franconian_equivalent("klein", limit=10) → top 10 variants
     """
-    service = mcp.ctx.get_dependencies()
+    # Create service directly since Context injection doesn't work reliably
+    # with all MCP client implementations (similar to resources)
+    service = create_translation_service()
 
     try:
         # Enforce reasonable limits to prevent MCP token overflow
-        limit = max(1, min(limit, 50))  # Between 1 and 50
+        limit = max(1, min(limit, 20))  # Between 1 and 20 (reduced from 50)
 
         translations = await service.translate_to_franconian(
             german_word, scope, town, exact_match
@@ -99,15 +109,20 @@ async def find_franconian_equivalent(
     except Exception as e:
         logger.error(f"Unexpected error in find_franconian_equivalent: {e}", exc_info=True)
         raise RuntimeError(f"Translation search failed unexpectedly: {e}") from e
+    finally:
+        # Clean up the service instance
+        await service.close()
 
 
 @mcp.resource("franconian://word/{german_word}")
 async def get_franconian_word_info(german_word: str) -> str:
     """Get comprehensive information about Franconian translation of a German word."""
-    service = mcp.ctx.get_dependencies()
+    # Resources don't support Context injection in current FastMCP version
+    # Create service inline for now
+    service = create_translation_service()
 
     try:
-        translations = await service.translate_to_franconian(german_word)
+        translations = await service.translate_to_franconian(german_word, limit=5)
 
         if not translations:
             return f"No Franconian equivalent found for '{german_word}' in the Ansbach region."

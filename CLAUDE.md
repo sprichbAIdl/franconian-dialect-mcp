@@ -17,12 +17,24 @@ uv sync
 ```
 
 ### Run the MCP Server
+
+For development/testing with MCP Inspector:
 ```bash
-python src/dialect_mcp/mcp.py
+uv run mcp dev server_standalone.py
+```
+
+For direct translation testing (CLI):
+```bash
+uv run python translate_cli.py <german_word> [limit]
 ```
 
 ### Testing the Server
-Since this is an MCP server, test it using MCP client tools or by integrating with Claude Desktop. No traditional test suite is configured.
+- **MCP Inspector**: `uv run mcp dev server_standalone.py` opens web interface
+- **CLI Tool**: `translate_cli.py` for direct Python testing
+- **Slash Command**: `/schorsch-mcp translate: "sentence"` in Claude Code
+- **Integration**: Configure in Claude Desktop's `claude_desktop_config.json`
+
+Note: The `server_standalone.py` entry point exists because `mcp dev` command has issues with relative imports when loading modules directly.
 
 ## Architecture Overview
 
@@ -30,9 +42,9 @@ This is a Model Context Protocol (MCP) server that provides access to Bavarian/F
 
 ### Key Components
 
-**Core MCP Server** (`src/dialect_mcp/mcp.py`):
+**Core MCP Server** (`src/dialect_mcp/server.py`):
 - `FastMCP` server setup with tools, resources, and prompts
-- Single entry point for all functionality
+- Entry points: `server_standalone.py` (for mcp dev) or `src/dialect_mcp/main.py` (for python -m)
 
 **Domain Types & Validation**:
 - `RawTranslationRequest`: Input validation at system boundary
@@ -85,7 +97,7 @@ This is a Model Context Protocol (MCP) server that provides access to Bavarian/F
 - `httpx`: Async HTTP client for BDO API
 - `mcp`: FastMCP server framework
 - `pydantic`: Data validation and modeling
-- Python 3.12+ required
+- Python 3.13+ required
 
 ### Error Handling
 

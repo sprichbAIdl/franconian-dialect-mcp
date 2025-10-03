@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "franconian-dialect": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/home/bastian/workspace/franconian-dialect-mcp",
+        "run",
+        "python",
+        "-m",
+        "dialect_mcp.main"
+      ]
+    }
+  }
+}

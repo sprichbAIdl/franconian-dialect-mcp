@@ -409,7 +409,7 @@ Before finalizing any Ansbach Franconian text:
 ✓ **Diminutives** use -la (Häusla, Madla, Kindla)  
 ✓ **Consistent variants** throughout (ham not hom, waar not wor)  
 ✓ **Modal particles** present (fei, halt, bloß, scho)  
-✓ **Pronouns** dialectal (i, mir, se not ich, wir, sie)  
+✓ **Pronouns** dialectal (i, mir, se NOT ich, wir, sie)  
 ✓ **Long vowels** marked correctly (aa, oo, ee)  
 ✓ **Natural flow** with do, amol, wie for narrative  
 
